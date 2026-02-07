@@ -1,0 +1,254 @@
+@model ClinicMIS.Models.ViewModels.PharmacyQueueViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Dispense Queue";
+    var totalPending = Model.PendingPrescriptions.Count();
+    var totalProcessing = Model.ProcessingPrescriptions.Count();
+    var totalReady = Model.ReadyPrescriptions.Count();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">Pharmacy Prescription Queue</span>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Inventory" class="btn btn-outline-primary">
+            <i class="bi bi-capsule me-1"></i> Drug Inventory
+        </a>
+        <a asp-action="LowStock" class="btn btn-outline-warning">
+            <i class="bi bi-exclamation-triangle me-1"></i> Low Stock
+        </a>
+    </div>
+</div>
+
+<!-- Search -->
+<div class="card mb-4">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="searchTerm" class="form-control" 
+                           placeholder="Search by Rx #, patient name, clinic number..." 
+                           value="@Model.SearchTerm" />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-search me-1"></i> Search
+                </button>
+            </div>
+            @if (!string.IsNullOrEmpty(Model.SearchTerm))
+            {
+                <div class="col-auto">
+                    <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+                        <i class="bi bi-x-lg"></i> Clear
+                    </a>
+                </div>
+            }
+        </form>
+    </div>
+</div>
+
+<!-- Queue Summary -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="fs-1 fw-bold text-warning">@totalPending</div>
+                <div class="text-muted">Pending</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-primary">
+            <div class="card-body text-center">
+                <div class="fs-1 fw-bold text-primary">@totalProcessing</div>
+                <div class="text-muted">Processing</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success">
+            <div class="card-body text-center">
+                <div class="fs-1 fw-bold text-success">@totalReady</div>
+                <div class="text-muted">Ready for Pickup</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Prescriptions -->
+<div class="card mb-4">
+    <div class="card-header bg-warning bg-opacity-10 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-hourglass-split me-2 text-warning"></i>Pending Prescriptions</span>
+        <span class="badge bg-warning text-dark">@totalPending</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.PendingPrescriptions.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rx #</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Items</th>
+                            <th>Sent At</th>
+                            <th>Waiting</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rx in Model.PendingPrescriptions.OrderBy(p => p.SentToPharmacyAt))
+                        {
+                            <tr>
+                                <td><code class="text-primary">@rx.PrescriptionNumber</code></td>
+                                <td>
+                                    <span class="fw-medium">@rx.PatientName</span>
+                                    <br><small class="text-muted">@rx.PatientClinicNumber</small>
+                                </td>
+                                <td>@rx.DoctorName</td>
+                                <td><span class="badge bg-secondary">@rx.ItemCount items</span></td>
+                                <td>@rx.SentToPharmacyAt?.ToString("HH:mm")</td>
+                                <td>
+                                    @{
+                                        var waitTime = rx.WaitingTime;
+                                        var waitClass = waitTime.TotalMinutes > 30 ? "text-danger" : 
+                                                       waitTime.TotalMinutes > 15 ? "text-warning" : "text-muted";
+                                    }
+                                    <span class="@waitClass">
+                                        @(waitTime.Hours > 0 ? $"{waitTime.Hours}h " : "")@waitTime.Minutes min
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <a asp-action="Dispense" asp-route-id="@rx.PrescriptionId" 
+                                       class="btn btn-sm btn-primary">
+                                        <i class="bi bi-play-fill me-1"></i> Start
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-check-circle fs-2 d-block mb-2"></i>
+                No pending prescriptions
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Processing Prescriptions -->
+<div class="card mb-4">
+    <div class="card-header bg-primary bg-opacity-10 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-gear-wide-connected me-2 text-primary"></i>Processing</span>
+        <span class="badge bg-primary">@totalProcessing</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.ProcessingPrescriptions.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rx #</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rx in Model.ProcessingPrescriptions)
+                        {
+                            <tr>
+                                <td><code class="text-primary">@rx.PrescriptionNumber</code></td>
+                                <td>
+                                    <span class="fw-medium">@rx.PatientName</span>
+                                    <br><small class="text-muted">@rx.PatientClinicNumber</small>
+                                </td>
+                                <td>@rx.DoctorName</td>
+                                <td><span class="badge bg-secondary">@rx.ItemCount items</span></td>
+                                <td>@rx.TotalAmount.ToString("C")</td>
+                                <td class="text-end">
+                                    <a asp-action="Dispense" asp-route-id="@rx.PrescriptionId" 
+                                       class="btn btn-sm btn-success">
+                                        <i class="bi bi-check-lg me-1"></i> Complete
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-2 d-block mb-2"></i>
+                No prescriptions in progress
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Ready for Pickup -->
+<div class="card mb-4">
+    <div class="card-header bg-success bg-opacity-10 d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-bag-check me-2 text-success"></i>Ready for Pickup</span>
+        <span class="badge bg-success">@totalReady</span>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.ReadyPrescriptions.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Rx #</th>
+                            <th>Patient</th>
+                            <th>Doctor</th>
+                            <th>Items</th>
+                            <th>Total</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var rx in Model.ReadyPrescriptions)
+                        {
+                            <tr>
+                                <td><code class="text-primary">@rx.PrescriptionNumber</code></td>
+                                <td>
+                                    <span class="fw-medium">@rx.PatientName</span>
+                                    <br><small class="text-muted">@rx.PatientClinicNumber</small>
+                                </td>
+                                <td>@rx.DoctorName</td>
+                                <td><span class="badge bg-secondary">@rx.ItemCount items</span></td>
+                                <td>@rx.TotalAmount.ToString("C")</td>
+                                <td>
+                                    <span class="badge bg-success">
+                                        <i class="bi bi-check-circle me-1"></i>Ready
+                                    </span>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-bag fs-2 d-block mb-2"></i>
+                No prescriptions ready for pickup
+            </div>
+        }
+    </div>
+</div>

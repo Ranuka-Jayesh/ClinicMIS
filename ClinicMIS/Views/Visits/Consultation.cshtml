@@ -1,0 +1,218 @@
+@model ClinicMIS.Models.ViewModels.ConsultationViewModel
+@{
+    ViewData["Title"] = "Consultation";
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clipboard-pulse me-2"></i>Patient Consultation
+            </div>
+            <div class="card-body">
+                <!-- Patient Info Header -->
+                <div class="alert alert-light border mb-4">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <small class="text-muted">Patient</small><br />
+                            <strong>@Model.Patient?.FullName</strong>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Clinic #</small><br />
+                            <code>@Model.Patient?.ClinicNumber</code>
+                        </div>
+                        <div class="col-md-4">
+                            <small class="text-muted">Visit</small><br />
+                            <code>@Model.Visit?.VisitNumber</code>
+                        </div>
+                    </div>
+                </div>
+                
+                <form asp-action="Consultation" method="post">
+                    <input type="hidden" asp-for="VisitId" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    
+                    <!-- Vital Signs -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-heart-pulse me-2"></i>Vital Signs</h6>
+                    <div class="row mb-4">
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="BloodPressure" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="BloodPressure" class="form-control" placeholder="e.g., 120/80" />
+                                <span class="input-group-text">mmHg</span>
+                            </div>
+                            <span asp-validation-for="BloodPressure" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="Temperature" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Temperature" type="number" step="0.1" class="form-control" placeholder="e.g., 37.0" />
+                                <span class="input-group-text">°C</span>
+                            </div>
+                            <span asp-validation-for="Temperature" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 mb-3">
+                            <label asp-for="PulseRate" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="PulseRate" type="number" class="form-control" placeholder="e.g., 72" />
+                                <span class="input-group-text">bpm</span>
+                            </div>
+                            <span asp-validation-for="PulseRate" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Weight" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Weight" type="number" step="0.1" class="form-control" placeholder="e.g., 70.5" />
+                                <span class="input-group-text">kg</span>
+                            </div>
+                            <span asp-validation-for="Weight" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label asp-for="Height" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="Height" type="number" step="0.1" class="form-control" placeholder="e.g., 175" />
+                                <span class="input-group-text">cm</span>
+                            </div>
+                            <span asp-validation-for="Height" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Consultation Details -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-journal-text me-2"></i>Consultation Details</h6>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Symptoms" class="form-label"></label>
+                        <textarea asp-for="Symptoms" class="form-control" rows="3"
+                                  placeholder="Describe patient's presenting symptoms..."></textarea>
+                        <span asp-validation-for="Symptoms" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="Diagnosis" class="form-label"></label>
+                        <textarea asp-for="Diagnosis" class="form-control" rows="3"
+                                  placeholder="Enter diagnosis based on examination..."></textarea>
+                        <span asp-validation-for="Diagnosis" class="text-danger small"></span>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label asp-for="DoctorNotes" class="form-label"></label>
+                        <textarea asp-for="DoctorNotes" class="form-control" rows="4"
+                                  placeholder="Additional notes, treatment plan, recommendations..."></textarea>
+                        <span asp-validation-for="DoctorNotes" class="text-danger small"></span>
+                    </div>
+                    
+                    <!-- Follow-up -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-calendar-event me-2"></i>Follow-up</h6>
+                    <div class="row mb-4">
+                        <div class="col-md-4">
+                            <div class="form-check">
+                                <input asp-for="FollowUpRequired" class="form-check-input" type="checkbox" id="followUpCheck" />
+                                <label asp-for="FollowUpRequired" class="form-check-label"></label>
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="followUpDateSection">
+                            <label asp-for="FollowUpDate" class="form-label"></label>
+                            <input asp-for="FollowUpDate" type="date" class="form-control" />
+                            <span asp-validation-for="FollowUpDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4" />
+                    
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Details" asp-route-id="@Model.VisitId" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Back to Visit
+                        </a>
+                        <div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg me-1"></i> Save Consultation
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Patient Info Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-person me-2"></i>Patient Information
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Name</dt>
+                    <dd class="col-sm-7">@Model.Patient?.FullName</dd>
+                    
+                    <dt class="col-sm-5">Age</dt>
+                    <dd class="col-sm-7">@Model.Patient?.Age years</dd>
+                    
+                    <dt class="col-sm-5">Gender</dt>
+                    <dd class="col-sm-7">@Model.Patient?.Gender</dd>
+                    
+                    <dt class="col-sm-5">Blood Type</dt>
+                    <dd class="col-sm-7">@(Model.Patient?.BloodType ?? "Unknown")</dd>
+                </dl>
+                
+                <hr />
+                
+                <a asp-controller="Patients" asp-action="Details" asp-route-id="@Model.Patient?.PatientId" 
+                   class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-folder2-open me-1"></i> View Full Patient Record
+                </a>
+            </div>
+        </div>
+        
+        <!-- Allergies Alert -->
+        @if (!string.IsNullOrEmpty(Model.Patient?.Allergies))
+        {
+            <div class="alert alert-danger">
+                <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Allergy Alert!</h6>
+                <p class="mb-0 small">@Model.Patient.Allergies</p>
+            </div>
+        }
+        
+        <!-- Visit Info -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-calendar-check me-2"></i>Visit Information
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Visit #</dt>
+                    <dd class="col-sm-7"><code>@Model.Visit?.VisitNumber</code></dd>
+                    
+                    <dt class="col-sm-5">Date</dt>
+                    <dd class="col-sm-7">@Model.Visit?.VisitDate.ToString("MMM dd, yyyy")</dd>
+                    
+                    <dt class="col-sm-5">Clinic</dt>
+                    <dd class="col-sm-7">@Model.Visit?.Clinic?.Name</dd>
+                    
+                    <dt class="col-sm-5">Reason</dt>
+                    <dd class="col-sm-7">@(Model.Visit?.ReasonForVisit ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const followUpCheck = document.getElementById('followUpCheck');
+            const followUpDateSection = document.getElementById('followUpDateSection');
+            
+            function toggleFollowUpDate() {
+                followUpDateSection.style.display = followUpCheck.checked ? 'block' : 'none';
+            }
+            
+            followUpCheck.addEventListener('change', toggleFollowUpDate);
+            toggleFollowUpDate();
+        });
+    </script>
+}

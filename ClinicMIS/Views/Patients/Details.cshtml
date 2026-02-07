@@ -1,0 +1,453 @@
+@model ClinicMIS.Models.ViewModels.PatientDetailsViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = $"Patient - {Model.Patient.FullName}";
+}
+
+<!-- Patient Header -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-center">
+            <div class="col-auto">
+                <div class="patient-avatar">
+                    @Model.Patient.FirstName.Substring(0, 1).ToUpper()@Model.Patient.LastName.Substring(0, 1).ToUpper()
+                </div>
+            </div>
+            <div class="col">
+                <h4 class="mb-1">@Model.Patient.FullName</h4>
+                <div class="d-flex flex-wrap gap-3 text-muted">
+                    <span><i class="bi bi-hash"></i> <code class="text-primary">@Model.Patient.ClinicNumber</code></span>
+                    <span><i class="bi bi-calendar3"></i> @Model.Patient.Age years old</span>
+                    <span>
+                        <i class="bi bi-gender-ambiguous"></i>
+                        <span class="badge @(Model.Patient.Gender == "Male" ? "bg-primary" : "bg-pink")">@Model.Patient.Gender</span>
+                    </span>
+                    <span><i class="bi bi-telephone"></i> @Model.Patient.PhoneNumber</span>
+                    @if (!string.IsNullOrEmpty(Model.Patient.Email))
+                    {
+                        <span><i class="bi bi-envelope"></i> @Model.Patient.Email</span>
+                    }
+                </div>
+            </div>
+            <div class="col-auto">
+                <div class="btn-group">
+                    <a asp-action="Edit" asp-route-id="@Model.Patient.PatientId" class="btn btn-outline-primary">
+                        <i class="bi bi-pencil me-1"></i> Edit
+                    </a>
+                    <a asp-controller="Visits" asp-action="Create" asp-route-patientId="@Model.Patient.PatientId" class="btn btn-success">
+                        <i class="bi bi-calendar-plus me-1"></i> New Visit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="stat-icon me-3">
+                    <i class="bi bi-calendar-check"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total Visits</div>
+                    <div class="fs-4 fw-bold">@Model.RecentVisits.Count()</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="stat-icon me-3">
+                    <i class="bi bi-cash"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total Paid</div>
+                    <div class="fs-4 fw-bold text-success">@Model.TotalPaid.ToString("C")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="stat-icon me-3">
+                    <i class="bi bi-receipt"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Total Billed</div>
+                    <div class="fs-4 fw-bold">@Model.TotalBilled.ToString("C")</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card @(Model.OutstandingBalance > 0 ? "danger" : "success") h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="stat-icon me-3">
+                    <i class="bi bi-wallet2"></i>
+                </div>
+                <div>
+                    <div class="text-muted small">Outstanding</div>
+                    <div class="fs-4 fw-bold @(Model.OutstandingBalance > 0 ? "text-danger" : "text-success")">
+                        @Model.OutstandingBalance.ToString("C")
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Patient Information -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-vcard me-2"></i>Patient Information</span>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5 text-muted">Date of Birth</dt>
+                    <dd class="col-sm-7">@Model.Patient.DateOfBirth.ToString("MMM dd, yyyy")</dd>
+
+                    <dt class="col-sm-5 text-muted">National ID</dt>
+                    <dd class="col-sm-7">@(Model.Patient.NationalId ?? "—")</dd>
+
+                    <dt class="col-sm-5 text-muted">Blood Type</dt>
+                    <dd class="col-sm-7">
+                        @if (!string.IsNullOrEmpty(Model.Patient.BloodType))
+                        {
+                            <span class="badge bg-danger">@Model.Patient.BloodType</span>
+                        }
+                        else
+                        {
+                            <span>—</span>
+                        }
+                    </dd>
+
+                    <dt class="col-sm-5 text-muted">Address</dt>
+                    <dd class="col-sm-7">@Model.Patient.Address</dd>
+
+                    <dt class="col-sm-5 text-muted">City</dt>
+                    <dd class="col-sm-7">@(Model.Patient.City ?? "—")</dd>
+
+                    <dt class="col-sm-5 text-muted">Registered</dt>
+                    <dd class="col-sm-7">@Model.Patient.RegistrationDate.ToString("MMM dd, yyyy")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <!-- Emergency Contact & Medical Info -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-heart-pulse me-2"></i>Medical & Emergency
+            </div>
+            <div class="card-body">
+                <h6 class="text-muted mb-3">Emergency Contact</h6>
+                <dl class="row">
+                    <dt class="col-sm-5 text-muted">Name</dt>
+                    <dd class="col-sm-7">@(Model.Patient.EmergencyContactName ?? "—")</dd>
+
+                    <dt class="col-sm-5 text-muted">Phone</dt>
+                    <dd class="col-sm-7">@(Model.Patient.EmergencyContactPhone ?? "—")</dd>
+                </dl>
+
+                <hr />
+
+                <h6 class="text-muted mb-3">Known Allergies</h6>
+                @if (!string.IsNullOrEmpty(Model.Patient.Allergies))
+                {
+                    <div class="alert alert-warning py-2 mb-0">
+                        <i class="bi bi-exclamation-triangle me-1"></i>
+                        @Model.Patient.Allergies
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted mb-0">No known allergies</p>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-lightning me-2"></i>Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-controller="Visits" asp-action="Create" asp-route-patientId="@Model.Patient.PatientId" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-calendar-plus me-2"></i>Schedule New Visit
+                    </a>
+                    <a asp-controller="Prescriptions" asp-action="Create" asp-route-patientId="@Model.Patient.PatientId" 
+                       class="btn btn-outline-success">
+                        <i class="bi bi-file-medical me-2"></i>Create Prescription
+                    </a>
+                    <a asp-controller="Billings" asp-action="Create" asp-route-patientId="@Model.Patient.PatientId" 
+                       class="btn btn-outline-warning">
+                        <i class="bi bi-receipt me-2"></i>Create Invoice
+                    </a>
+                    <a asp-action="Edit" asp-route-id="@Model.Patient.PatientId" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-pencil me-2"></i>Edit Patient Info
+                    </a>
+                    <hr class="my-2" />
+                    <a asp-action="Delete" asp-route-id="@Model.Patient.PatientId" 
+                       class="btn btn-outline-danger">
+                        <i class="bi bi-trash me-2"></i>Delete Patient
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Visits -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-calendar-check me-2"></i>Recent Visits</span>
+        <a asp-controller="Visits" asp-action="Index" asp-route-patientId="@Model.Patient.PatientId" class="btn btn-sm btn-outline-primary">
+            View All
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.RecentVisits.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Visit #</th>
+                            <th>Date</th>
+                            <th>Clinic</th>
+                            <th>Doctor</th>
+                            <th>Reason</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var visit in Model.RecentVisits)
+                        {
+                            <tr>
+                                <td><code class="text-primary">@visit.VisitNumber</code></td>
+                                <td>@visit.VisitDate.ToString("MMM dd, yyyy")</td>
+                                <td>@visit.Clinic?.Name</td>
+                                <td>@(visit.Doctor != null ? $"Dr. {visit.Doctor.FirstName} {visit.Doctor.LastName}" : "—")</td>
+                                <td>@(visit.ReasonForVisit ?? "—")</td>
+                                <td>
+                                    @{
+                                        var visitStatusClass = visit.Status switch
+                                        {
+                                            VisitStatus.Completed => "bg-success",
+                                            VisitStatus.InProgress => "bg-primary",
+                                            VisitStatus.CheckedIn => "bg-info",
+                                            VisitStatus.Scheduled => "bg-warning text-dark",
+                                            VisitStatus.Cancelled => "bg-danger",
+                                            VisitStatus.NoShow => "bg-secondary",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @visitStatusClass">@visit.Status</span>
+                                </td>
+                                <td class="text-end">
+                                    <a asp-controller="Visits" asp-action="Details" asp-route-id="@visit.VisitId" 
+                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                <p class="mb-0">No visits recorded yet</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Recent Prescriptions -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-file-medical me-2"></i>Recent Prescriptions</span>
+        <a asp-controller="Prescriptions" asp-action="Index" asp-route-patientId="@Model.Patient.PatientId" class="btn btn-sm btn-outline-primary">
+            View All
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.RecentPrescriptions.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Prescription #</th>
+                            <th>Date</th>
+                            <th>Doctor</th>
+                            <th>Diagnosis</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var prescription in Model.RecentPrescriptions)
+                        {
+                            <tr>
+                                <td><code class="text-primary">@prescription.PrescriptionNumber</code></td>
+                                <td>@prescription.PrescriptionDate.ToString("MMM dd, yyyy")</td>
+                                <td>@(prescription.Doctor != null ? $"Dr. {prescription.Doctor.FirstName} {prescription.Doctor.LastName}" : "—")</td>
+                                <td>@(prescription.Diagnosis ?? "—")</td>
+                                <td>
+                                    @{
+                                        var prescriptionStatusClass = prescription.Status switch
+                                        {
+                                            PrescriptionStatus.Dispensed => "bg-success",
+                                            PrescriptionStatus.ReadyForPickup => "bg-info",
+                                            PrescriptionStatus.Processing => "bg-primary",
+                                            PrescriptionStatus.SentToPharmacy => "bg-warning text-dark",
+                                            PrescriptionStatus.Draft => "bg-secondary",
+                                            PrescriptionStatus.Cancelled => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @prescriptionStatusClass">@prescription.Status</span>
+                                </td>
+                                <td class="text-end">
+                                    <a asp-controller="Prescriptions" asp-action="Details" asp-route-id="@prescription.PrescriptionId" 
+                                       class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-file-medical fs-1 d-block mb-2"></i>
+                <p class="mb-0">No prescriptions recorded yet</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Recent Billings -->
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-receipt me-2"></i>Recent Billings</span>
+        <a asp-controller="Billings" asp-action="Index" asp-route-patientId="@Model.Patient.PatientId" class="btn btn-sm btn-outline-primary">
+            View All
+        </a>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.RecentBillings.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Date</th>
+                            <th>Total Amount</th>
+                            <th>Amount Paid</th>
+                            <th>Balance</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var billing in Model.RecentBillings)
+                        {
+                            <tr>
+                                <td><code class="text-primary">@billing.InvoiceNumber</code></td>
+                                <td>@billing.BillingDate.ToString("MMM dd, yyyy")</td>
+                                <td>@billing.TotalAmount.ToString("C")</td>
+                                <td class="text-success">@billing.AmountPaid.ToString("C")</td>
+                                <td class="@(billing.BalanceDue > 0 ? "text-danger fw-medium" : "")">
+                                    @billing.BalanceDue.ToString("C")
+                                </td>
+                                <td>
+                                    @{
+                                        var paymentStatusClass = billing.PaymentStatus switch
+                                        {
+                                            PaymentStatus.Paid => "bg-success",
+                                            PaymentStatus.PartiallyPaid => "bg-warning text-dark",
+                                            PaymentStatus.Pending => "bg-secondary",
+                                            PaymentStatus.Refunded => "bg-info",
+                                            PaymentStatus.Waived => "bg-dark",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @paymentStatusClass">@billing.PaymentStatus</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-controller="Billings" asp-action="Details" asp-route-id="@billing.BillingId" 
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (billing.PaymentStatus != PaymentStatus.Paid)
+                                        {
+                                            <a asp-controller="Billings" asp-action="RecordPayment" asp-route-id="@billing.BillingId" 
+                                               class="btn btn-outline-success" title="Record Payment">
+                                                <i class="bi bi-credit-card"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-4 text-muted">
+                <i class="bi bi-receipt fs-1 d-block mb-2"></i>
+                <p class="mb-0">No billing records yet</p>
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Back Button -->
+<div class="d-flex justify-content-start">
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i> Back to Patients
+    </a>
+</div>
+
+<style>
+    .bg-pink { background-color: #e91e8c; }
+    
+    .patient-avatar {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, #0d6efd, #6610f2);
+        color: #fff;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.5rem;
+    }
+</style>

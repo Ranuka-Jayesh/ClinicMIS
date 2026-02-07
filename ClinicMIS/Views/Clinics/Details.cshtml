@@ -1,0 +1,268 @@
+@model ClinicMIS.Models.Entities.Clinic
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = Model.Name;
+    var doctorCount = Model.Staff.Count(s => s.Role == StaffRole.Doctor);
+    var nurseCount = Model.Staff.Count(s => s.Role == StaffRole.Nurse);
+    var pharmacistCount = Model.Staff.Count(s => s.Role == StaffRole.Pharmacist);
+    var receptionistCount = Model.Staff.Count(s => s.Role == StaffRole.Receptionist);
+    var todayVisits = ViewBag.TodayVisits ?? 0;
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Clinic Profile Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-building me-2"></i>Clinic Information
+                </div>
+                <div>
+                    @if (Model.IsActive)
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-secondary">Inactive</span>
+                    }
+                </div>
+            </div>
+            <div class="card-body">
+                <h3 class="mb-3">
+                    <i class="bi bi-building text-primary me-2"></i>@Model.Name
+                </h3>
+                
+                @if (!string.IsNullOrEmpty(Model.Description))
+                {
+                    <p class="text-muted mb-4">@Model.Description</p>
+                }
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5"><i class="bi bi-geo-alt me-1"></i>Location</dt>
+                            <dd class="col-sm-7">@(Model.Location ?? "Not specified")</dd>
+                            
+                            <dt class="col-sm-5"><i class="bi bi-telephone me-1"></i>Phone</dt>
+                            <dd class="col-sm-7">
+                                @if (!string.IsNullOrEmpty(Model.ContactPhone))
+                                {
+                                    <a href="tel:@Model.ContactPhone">@Model.ContactPhone</a>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Not specified</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                    <div class="col-md-6">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-5"><i class="bi bi-calendar me-1"></i>Created</dt>
+                            <dd class="col-sm-7">@Model.CreatedAt.ToString("MMM dd, yyyy")</dd>
+                            
+                            <dt class="col-sm-5"><i class="bi bi-calendar-check me-1"></i>Today's Visits</dt>
+                            <dd class="col-sm-7"><span class="badge bg-primary">@todayVisits</span></dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Staff Statistics -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-person-badge fs-2 text-primary"></i>
+                        <h4 class="mt-2 mb-0">@doctorCount</h4>
+                        <small class="text-muted">Doctors</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-heart-pulse fs-2 text-info"></i>
+                        <h4 class="mt-2 mb-0">@nurseCount</h4>
+                        <small class="text-muted">Nurses</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-capsule fs-2 text-success"></i>
+                        <h4 class="mt-2 mb-0">@pharmacistCount</h4>
+                        <small class="text-muted">Pharmacists</small>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body">
+                        <i class="bi bi-telephone fs-2 text-warning"></i>
+                        <h4 class="mt-2 mb-0">@receptionistCount</h4>
+                        <small class="text-muted">Receptionists</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Staff List -->
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-people me-2"></i>Staff Members
+                </div>
+                <span class="badge bg-secondary">@Model.Staff.Count total</span>
+            </div>
+            <div class="card-body p-0">
+                @if (Model.Staff.Any())
+                {
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Specialization</th>
+                                    <th>Contact</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var staff in Model.Staff.OrderBy(s => s.Role).ThenBy(s => s.LastName))
+                                {
+                                    var roleClass = staff.Role switch
+                                    {
+                                        StaffRole.Admin => "bg-danger",
+                                        StaffRole.Doctor => "bg-primary",
+                                        StaffRole.Nurse => "bg-info",
+                                        StaffRole.Pharmacist => "bg-success",
+                                        StaffRole.Receptionist => "bg-warning text-dark",
+                                        _ => "bg-secondary"
+                                    };
+                                    
+                                    <tr>
+                                        <td>
+                                            <strong>@staff.DisplayTitle</strong>
+                                            <br />
+                                            <small class="text-muted">@staff.EmployeeNumber</small>
+                                        </td>
+                                        <td><span class="badge @roleClass">@staff.Role</span></td>
+                                        <td>@(staff.Specialization ?? "—")</td>
+                                        <td>
+                                            <small>
+                                                <i class="bi bi-envelope me-1"></i>@staff.Email
+                                            </small>
+                                        </td>
+                                        <td class="text-end">
+                                            <a asp-controller="Staff" asp-action="Details" asp-route-id="@staff.StaffId" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-4">
+                        <i class="bi bi-people fs-2 text-muted"></i>
+                        <p class="text-muted mb-0 mt-2">No staff assigned to this clinic</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Actions Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-gear me-2"></i>Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-action="Edit" asp-route-id="@Model.ClinicId" class="btn btn-primary">
+                        <i class="bi bi-pencil me-1"></i> Edit Clinic
+                    </a>
+                    
+                    <form asp-action="ToggleActive" asp-route-id="@Model.ClinicId" method="post">
+                        @Html.AntiForgeryToken()
+                        @if (Model.IsActive)
+                        {
+                            <button type="submit" class="btn btn-outline-danger w-100"
+                                    onclick="return confirm('Are you sure you want to deactivate this clinic?');">
+                                <i class="bi bi-x-circle me-1"></i> Deactivate
+                            </button>
+                        }
+                        else
+                        {
+                            <button type="submit" class="btn btn-outline-success w-100">
+                                <i class="bi bi-check-circle me-1"></i> Activate
+                            </button>
+                        }
+                    </form>
+                    
+                    <hr />
+                    
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to List
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Stats -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-bar-chart me-2"></i>Quick Stats
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Total Staff</span>
+                        <strong>@Model.Staff.Count</strong>
+                    </li>
+                    <li class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Doctors</span>
+                        <span class="badge bg-primary">@doctorCount</span>
+                    </li>
+                    <li class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Nurses</span>
+                        <span class="badge bg-info">@nurseCount</span>
+                    </li>
+                    <li class="d-flex justify-content-between mb-3">
+                        <span class="text-muted">Today's Visits</span>
+                        <span class="badge bg-success">@todayVisits</span>
+                    </li>
+                    <li class="d-flex justify-content-between">
+                        <span class="text-muted">Status</span>
+                        @if (Model.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

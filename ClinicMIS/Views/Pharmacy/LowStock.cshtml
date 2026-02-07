@@ -1,0 +1,220 @@
+@model IEnumerable<ClinicMIS.Models.Entities.Drug>
+@{
+    ViewData["Title"] = "Low Stock Alerts";
+    var lowStockCount = Model.Count();
+    var criticalCount = Model.Count(d => d.QuantityInStock == 0);
+    var expiringCount = Model.Count(d => d.ExpiryDate.HasValue && d.ExpiryDate.Value <= DateTime.Today.AddDays(30));
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">Drugs requiring attention</span>
+    </div>
+    <div class="d-flex gap-2">
+        <a asp-action="Index" class="btn btn-outline-primary">
+            <i class="bi bi-prescription2 me-1"></i> Dispense Queue
+        </a>
+        <a asp-action="Inventory" class="btn btn-outline-secondary">
+            <i class="bi bi-capsule me-1"></i> Full Inventory
+        </a>
+    </div>
+</div>
+
+<!-- Alert Summary -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="fs-1 fw-bold text-warning">@lowStockCount</div>
+                <div class="text-muted">Low Stock Items</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <div class="fs-1 fw-bold text-danger">@criticalCount</div>
+                <div class="text-muted">Out of Stock</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-info">
+            <div class="card-body text-center">
+                <div class="fs-1 fw-bold text-info">@expiringCount</div>
+                <div class="text-muted">Expiring Soon</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Low Stock Table -->
+<div class="card">
+    <div class="card-header bg-warning bg-opacity-10">
+        <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+        <strong>Low Stock Drugs</strong>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Code</th>
+                            <th>Drug Name</th>
+                            <th>Category</th>
+                            <th>Form / Strength</th>
+                            <th class="text-center">Current Stock</th>
+                            <th class="text-center">Reorder Level</th>
+                            <th class="text-center">Shortage</th>
+                            <th>Expiry</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var drug in Model.OrderBy(d => d.QuantityInStock))
+                        {
+                            var isOutOfStock = drug.QuantityInStock == 0;
+                            var isExpired = drug.IsExpired;
+                            var isExpiringSoon = drug.ExpiryDate.HasValue && 
+                                                drug.ExpiryDate.Value >= DateTime.Today && 
+                                                drug.ExpiryDate.Value <= DateTime.Today.AddDays(30);
+                            var shortage = drug.ReorderLevel - drug.QuantityInStock;
+                            
+                            <tr class="@(isOutOfStock ? "table-danger" : "table-warning")">
+                                <td><code class="text-primary">@drug.DrugCode</code></td>
+                                <td>
+                                    <span class="fw-medium">@drug.Name</span>
+                                    @if (isOutOfStock)
+                                    {
+                                        <span class="badge bg-danger ms-1">OUT OF STOCK</span>
+                                    }
+                                    @if (isExpired)
+                                    {
+                                        <span class="badge bg-dark ms-1">EXPIRED</span>
+                                    }
+                                    else if (isExpiringSoon)
+                                    {
+                                        <span class="badge bg-info ms-1">EXPIRING</span>
+                                    }
+                                </td>
+                                <td><span class="badge bg-secondary">@drug.Category</span></td>
+                                <td>@drug.DosageForm / @drug.Strength</td>
+                                <td class="text-center">
+                                    <span class="badge @(isOutOfStock ? "bg-danger" : "bg-warning text-dark") fs-6">
+                                        @drug.QuantityInStock
+                                    </span>
+                                </td>
+                                <td class="text-center text-muted">@drug.ReorderLevel</td>
+                                <td class="text-center">
+                                    @if (shortage > 0)
+                                    {
+                                        <span class="text-danger fw-bold">-@shortage</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (drug.ExpiryDate.HasValue)
+                                    {
+                                        <span class="@(isExpired ? "text-danger" : isExpiringSoon ? "text-warning" : "")">
+                                            @drug.ExpiryDate.Value.ToString("MMM yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="EditDrug" asp-route-id="@drug.DrugId" 
+                                           class="btn btn-outline-primary" title="Edit Drug">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="@Url.Action("Inventory", new { searchTerm = drug.DrugCode })" 
+                                           class="btn btn-outline-success" title="Add Stock">
+                                            <i class="bi bi-plus-lg"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-check-circle fs-1 text-success d-block mb-3"></i>
+                <h5 class="text-success">All Good!</h5>
+                <p class="text-muted">No low stock alerts at this time</p>
+                <a asp-action="Inventory" class="btn btn-outline-primary">View Full Inventory</a>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.Any())
+{
+    <!-- Reorder Suggestions -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <i class="bi bi-cart-plus me-2"></i>
+            <strong>Suggested Reorder Quantities</strong>
+        </div>
+        <div class="card-body">
+            <p class="text-muted small mb-3">
+                Based on reorder levels and current stock. Suggested quantity brings stock to 2x reorder level.
+            </p>
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Drug</th>
+                            <th class="text-center">Current</th>
+                            <th class="text-center">Reorder Level</th>
+                            <th class="text-center">Suggested Order</th>
+                            <th class="text-end">Est. Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var drug in Model.Where(d => !d.IsExpired).OrderBy(d => d.QuantityInStock).Take(10))
+                        {
+                            var suggestedQty = (drug.ReorderLevel * 2) - drug.QuantityInStock;
+                            if (suggestedQty <= 0) suggestedQty = drug.ReorderLevel;
+                            var estCost = suggestedQty * drug.UnitPrice;
+                            
+                            <tr>
+                                <td>@drug.Name (@drug.Strength)</td>
+                                <td class="text-center">@drug.QuantityInStock</td>
+                                <td class="text-center">@drug.ReorderLevel</td>
+                                <td class="text-center fw-bold text-primary">@suggestedQty</td>
+                                <td class="text-end">@estCost.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="4" class="text-end fw-bold">Estimated Total:</td>
+                            <td class="text-end fw-bold text-primary">
+                                @{
+                                    var total = Model.Where(d => !d.IsExpired).Take(10).Sum(d => {
+                                        var qty = (d.ReorderLevel * 2) - d.QuantityInStock;
+                                        if (qty <= 0) qty = d.ReorderLevel;
+                                        return qty * d.UnitPrice;
+                                    });
+                                }
+                                @total.ToString("C")
+                            </td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+}

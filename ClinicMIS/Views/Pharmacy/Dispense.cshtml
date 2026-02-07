@@ -1,0 +1,288 @@
+@model ClinicMIS.Models.ViewModels.DispenseViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Dispense Prescription";
+    var statusClass = Model.Prescription.Status switch
+    {
+        PrescriptionStatus.SentToPharmacy => "bg-info",
+        PrescriptionStatus.Processing => "bg-warning text-dark",
+        PrescriptionStatus.ReadyForPickup => "bg-success",
+        _ => "bg-secondary"
+    };
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Prescription Details -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-prescription2 me-2"></i>Prescription Details
+                </div>
+                <span class="badge @statusClass">@Model.Prescription.Status</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <small class="text-muted">Prescription #</small><br />
+                        <code class="text-primary fs-5">@Model.Prescription.PrescriptionNumber</code>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Date</small><br />
+                        <strong>@Model.Prescription.PrescriptionDate.ToString("MMM dd, yyyy")</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Prescribing Doctor</small><br />
+                        <strong>@Model.Prescription.Doctor?.DisplayTitle</strong>
+                    </div>
+                </div>
+                
+                <hr />
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2"><i class="bi bi-person me-1"></i>Patient</h6>
+                        <p class="mb-1">
+                            <strong>@Model.Prescription.Patient?.FullName</strong>
+                        </p>
+                        <small class="text-muted">
+                            Clinic #: @Model.Prescription.Patient?.ClinicNumber
+                        </small>
+                    </div>
+                    <div class="col-md-6">
+                        @if (!string.IsNullOrEmpty(Model.Prescription.Diagnosis))
+                        {
+                            <h6 class="text-muted mb-2"><i class="bi bi-clipboard-pulse me-1"></i>Diagnosis</h6>
+                            <p class="mb-0">@Model.Prescription.Diagnosis</p>
+                        }
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.Prescription.SpecialInstructions))
+                {
+                    <div class="alert alert-info mt-3 mb-0">
+                        <i class="bi bi-info-circle me-2"></i>
+                        <strong>Special Instructions:</strong> @Model.Prescription.SpecialInstructions
+                    </div>
+                }
+            </div>
+        </div>
+        
+        <!-- Dispensing Form -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-capsule me-2"></i>Prescription Items
+            </div>
+            <div class="card-body p-0">
+                <form asp-action="Dispense" method="post" id="dispenseForm">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Drug</th>
+                                    <th>Instructions</th>
+                                    <th class="text-center">Prescribed</th>
+                                    <th class="text-center">Stock</th>
+                                    <th class="text-center">To Dispense</th>
+                                    <th class="text-end">Price</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @for (int i = 0; i < Model.Items.Count; i++)
+                                {
+                                    var item = Model.Items[i];
+                                    var hasStock = item.AvailableStock >= item.QuantityPrescribed;
+                                    
+                                    <tr class="@(!hasStock ? "table-warning" : "")">
+                                        <td>
+                                            <input type="hidden" name="items[@i].PrescriptionItemId" value="@item.PrescriptionItemId" />
+                                            <input type="hidden" name="items[@i].DrugId" value="@item.DrugId" />
+                                            @if (!string.IsNullOrEmpty(item.Notes))
+                                            {
+                                                <input type="hidden" name="items[@i].Notes" value="@item.Notes" />
+                                            }
+                                            <strong>@item.DrugName</strong>
+                                            @if (!hasStock)
+                                            {
+                                                <br /><span class="badge bg-danger">Low Stock</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <small>@item.DosageInstructions</small>
+                                            @if (!string.IsNullOrEmpty(item.Notes))
+                                            {
+                                                <br /><small class="text-muted">Note: @item.Notes</small>
+                                            }
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">@item.QuantityPrescribed</span>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (hasStock)
+                                            {
+                                                <span class="badge bg-success">@item.AvailableStock</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge bg-danger">@item.AvailableStock</span>
+                                            }
+                                        </td>
+                                        <td class="text-center" style="width: 100px;">
+                                            <input type="number" 
+                                                   name="items[@i].QuantityToDispense" 
+                                                   class="form-control form-control-sm text-center dispense-qty" 
+                                                   value="@Math.Min(item.QuantityPrescribed, item.AvailableStock)"
+                                                   min="0"
+                                                   max="@item.AvailableStock"
+                                                   data-price="@item.UnitPrice"
+                                                   data-max="@item.AvailableStock" />
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="item-total">@((item.UnitPrice * Math.Min(item.QuantityPrescribed, item.AvailableStock)).ToString("C"))</span>
+                                            <input type="hidden" name="items[@i].UnitPrice" value="@item.UnitPrice" />
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                            <tfoot class="table-light">
+                                <tr>
+                                    <td colspan="5" class="text-end fw-bold">Estimated Total:</td>
+                                    <td class="text-end fw-bold" id="grandTotal">$0.00</td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <div class="p-3 border-top">
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Queue
+                            </a>
+                            <button type="submit" class="btn btn-success btn-lg" id="dispenseBtn">
+                                <i class="bi bi-check-circle me-1"></i> Dispense & Generate Invoice
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Patient Allergies Alert -->
+        @if (!string.IsNullOrEmpty(Model.Prescription.Patient?.Allergies))
+        {
+            <div class="alert alert-danger">
+                <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Allergy Alert!</h6>
+                <p class="mb-0 small">@Model.Prescription.Patient.Allergies</p>
+            </div>
+        }
+        
+        <!-- Quick Actions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-lightning me-2"></i>Quick Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    <a asp-controller="Patients" asp-action="Details" asp-route-id="@Model.Prescription.PatientId" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-person me-1"></i> View Patient
+                    </a>
+                    <a asp-action="Inventory" class="btn btn-outline-secondary">
+                        <i class="bi bi-box-seam me-1"></i> Check Inventory
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Timeline -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-clock-history me-2"></i>Timeline
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-3">
+                        <small class="text-muted d-block">Prescribed</small>
+                        @Model.Prescription.PrescriptionDate.ToString("MMM dd, yyyy")
+                        <small class="text-muted">by @Model.Prescription.Doctor?.FullName</small>
+                    </li>
+                    @if (Model.Prescription.SentToPharmacyAt.HasValue)
+                    {
+                        <li class="mb-3">
+                            <small class="text-muted d-block">Sent to Pharmacy</small>
+                            @Model.Prescription.SentToPharmacyAt.Value.ToString("MMM dd, yyyy HH:mm")
+                        </li>
+                    }
+                    <li>
+                        <small class="text-muted d-block">Current Status</small>
+                        <span class="badge @statusClass">@Model.Prescription.Status</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const qtyInputs = document.querySelectorAll('.dispense-qty');
+            const grandTotalEl = document.getElementById('grandTotal');
+            
+            function calculateTotal() {
+                let total = 0;
+                qtyInputs.forEach(function(input) {
+                    const qty = parseInt(input.value) || 0;
+                    const price = parseFloat(input.dataset.price) || 0;
+                    const itemTotal = qty * price;
+                    
+                    // Update item total display
+                    const row = input.closest('tr');
+                    const itemTotalEl = row.querySelector('.item-total');
+                    if (itemTotalEl) {
+                        itemTotalEl.textContent = '$' + itemTotal.toFixed(2);
+                    }
+                    
+                    total += itemTotal;
+                });
+                
+                grandTotalEl.textContent = '$' + total.toFixed(2);
+            }
+            
+            qtyInputs.forEach(function(input) {
+                input.addEventListener('change', function() {
+                    const max = parseInt(this.dataset.max);
+                    if (parseInt(this.value) > max) {
+                        this.value = max;
+                    }
+                    if (parseInt(this.value) < 0) {
+                        this.value = 0;
+                    }
+                    calculateTotal();
+                });
+            });
+            
+            // Initial calculation
+            calculateTotal();
+            
+            // Confirm before dispensing
+            document.getElementById('dispenseForm').addEventListener('submit', function(e) {
+                if (!confirm('Are you sure you want to dispense this prescription? This action cannot be undone.')) {
+                    e.preventDefault();
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,158 @@
+@model ClinicMIS.Models.ViewModels.BillingCreateViewModel
+@{
+    ViewData["Title"] = "Create Invoice";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-receipt me-2"></i>Create New Invoice
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post" id="billingForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    
+                    <!-- Patient Selection -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-person me-2"></i>Patient Information</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label asp-for="PatientId" class="form-label"></label>
+                            @if (Model.Patient != null)
+                            {
+                                <input type="hidden" asp-for="PatientId" />
+                                <div class="form-control bg-light">
+                                    <strong>@Model.Patient.FullName</strong> (@Model.Patient.ClinicNumber)
+                                </div>
+                            }
+                            else
+                            {
+                                <select asp-for="PatientId" class="form-select" required>
+                                    <option value="">-- Select Patient --</option>
+                                    @foreach (var patient in Model.AvailablePatients ?? Enumerable.Empty<ClinicMIS.Models.Entities.Patient>())
+                                    {
+                                        <option value="@patient.PatientId">@patient.FullName (@patient.ClinicNumber)</option>
+                                    }
+                                </select>
+                                <span asp-validation-for="PatientId" class="text-danger small"></span>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Billing Details -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-calculator me-2"></i>Billing Details</h6>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="ConsultationFee" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="ConsultationFee" type="number" step="0.01" min="0" class="form-control" id="consultationFee" />
+                            </div>
+                            <span asp-validation-for="ConsultationFee" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="MedicationCost" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="MedicationCost" type="number" step="0.01" min="0" class="form-control" id="medicationCost" />
+                            </div>
+                            <span asp-validation-for="MedicationCost" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="OtherCharges" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="OtherCharges" type="number" step="0.01" min="0" class="form-control" id="otherCharges" />
+                            </div>
+                            <span asp-validation-for="OtherCharges" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Discount" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Discount" type="number" step="0.01" min="0" class="form-control" id="discount" />
+                            </div>
+                            <span asp-validation-for="Discount" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="Tax" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="Tax" type="number" step="0.01" min="0" class="form-control" id="tax" />
+                            </div>
+                            <span asp-validation-for="Tax" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Total Amount</label>
+                            <div class="form-control bg-light fw-bold fs-5 text-primary" id="totalAmount">
+                                $0.00
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="3"></textarea>
+                        <span asp-validation-for="Notes" class="text-danger small"></span>
+                    </div>
+
+                    <!-- Hidden fields for prescription/visit if needed -->
+                    <input type="hidden" asp-for="PrescriptionId" />
+                    <input type="hidden" asp-for="VisitId" />
+
+                    <!-- Action Buttons -->
+                    <div class="d-flex justify-content-between mt-4">
+                        @if (Model.PatientId > 0)
+                        {
+                            <a asp-controller="Patients" asp-action="Details" asp-route-id="@Model.PatientId" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Billings" asp-action="Index" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Cancel
+                            </a>
+                        }
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle me-2"></i>Create Invoice
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Calculate total amount dynamically
+        function calculateTotal() {
+            const consultationFee = parseFloat(document.getElementById('consultationFee').value) || 0;
+            const medicationCost = parseFloat(document.getElementById('medicationCost').value) || 0;
+            const otherCharges = parseFloat(document.getElementById('otherCharges').value) || 0;
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const tax = parseFloat(document.getElementById('tax').value) || 0;
+            
+            const subtotal = consultationFee + medicationCost + otherCharges;
+            const total = subtotal - discount + tax;
+            
+            document.getElementById('totalAmount').textContent = '$' + total.toFixed(2);
+        }
+
+        // Add event listeners to all amount fields
+        ['consultationFee', 'medicationCost', 'otherCharges', 'discount', 'tax'].forEach(id => {
+            document.getElementById(id).addEventListener('input', calculateTotal);
+        });
+
+        // Calculate on page load
+        calculateTotal();
+    </script>
+}

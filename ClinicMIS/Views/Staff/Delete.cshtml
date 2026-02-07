@@ -1,0 +1,106 @@
+@model ClinicMIS.Models.Entities.Staff
+@{
+    ViewData["Title"] = "Delete Staff";
+}
+
+<div class="container-fluid">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="Index">Staff</a></li>
+            <li class="breadcrumb-item"><a asp-action="Details" asp-route-id="@Model.StaffId">@Model.FirstName @Model.LastName</a></li>
+            <li class="breadcrumb-item active">Delete</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        Confirm Delete
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-octagon me-2"></i>
+                        <strong>Warning!</strong> You are about to permanently delete this staff member. This action cannot be undone.
+                    </div>
+
+                    <div class="text-center mb-4">
+                        <div class="bg-danger bg-opacity-10 rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                            <i class="bi bi-person-x fs-1 text-danger"></i>
+                        </div>
+                    </div>
+
+                    <h5 class="text-center mb-3">@Model.FirstName @Model.LastName</h5>
+
+                    <dl class="row mb-0">
+                        <dt class="col-sm-4">Employee Number</dt>
+                        <dd class="col-sm-8"><code>@Model.EmployeeNumber</code></dd>
+
+                        <dt class="col-sm-4">Role</dt>
+                        <dd class="col-sm-8">
+                            <span class="badge bg-info">@Model.Role</span>
+                        </dd>
+
+                        <dt class="col-sm-4">Email</dt>
+                        <dd class="col-sm-8">@Model.Email</dd>
+
+                        <dt class="col-sm-4">Phone</dt>
+                        <dd class="col-sm-8">@(Model.PhoneNumber ?? "—")</dd>
+
+                        <dt class="col-sm-4">Clinic</dt>
+                        <dd class="col-sm-8">@(Model.Clinic?.Name ?? "Not Assigned")</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.IsActive)
+                            {
+                                <span class="badge bg-success">Active</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">Inactive</span>
+                            }
+                        </dd>
+
+                        <dt class="col-sm-4">User Account</dt>
+                        <dd class="col-sm-8">
+                            @if (Model.UserId != null)
+                            {
+                                <span class="text-warning">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    Has associated user account (will also be deleted)
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">No user account</span>
+                            }
+                        </dd>
+                    </dl>
+                </div>
+                <div class="card-footer bg-light">
+                    <form asp-action="Delete" method="post">
+                        <input type="hidden" name="id" value="@Model.StaffId" />
+                        <div class="d-flex justify-content-between">
+                            <a asp-action="Details" asp-route-id="@Model.StaffId" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i> Delete Staff Member
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="alert alert-info mt-3">
+                <i class="bi bi-lightbulb me-2"></i>
+                <strong>Tip:</strong> If you want to keep historical records, consider 
+                <a asp-action="Details" asp-route-id="@Model.StaffId">deactivating</a> the staff member instead of deleting.
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,186 @@
+@model IEnumerable<ClinicMIS.Models.ViewModels.BillingListItem>
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Pending Payments";
+    var totalOutstanding = Model.Sum(b => b.BalanceDue);
+    var pendingCount = Model.Count(b => b.PaymentStatus == PaymentStatus.Pending);
+    var partialCount = Model.Count(b => b.PaymentStatus == PaymentStatus.PartiallyPaid);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">@Model.Count() invoices awaiting payment</span>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-primary">
+        <i class="bi bi-receipt me-1"></i> All Billings
+    </a>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card border-danger">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold text-danger">@totalOutstanding.ToString("C")</div>
+                <div class="text-muted">Total Outstanding</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-secondary">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold text-secondary">@pendingCount</div>
+                <div class="text-muted">Pending (Unpaid)</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-warning">
+            <div class="card-body text-center">
+                <div class="fs-3 fw-bold text-warning">@partialCount</div>
+                <div class="text-muted">Partially Paid</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Pending Payments Table -->
+<div class="card">
+    <div class="card-header bg-danger bg-opacity-10">
+        <i class="bi bi-clock-history text-danger me-2"></i>
+        <strong>Invoices Awaiting Payment</strong>
+    </div>
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th class="text-end">Total</th>
+                            <th class="text-end">Paid</th>
+                            <th class="text-end">Balance Due</th>
+                            <th>Status</th>
+                            <th>Age</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var billing in Model.OrderBy(b => b.BillingDate))
+                        {
+                            var daysOld = (DateTime.Today - billing.BillingDate).Days;
+                            var ageClass = daysOld > 30 ? "text-danger fw-bold" : 
+                                          daysOld > 14 ? "text-warning" : "text-muted";
+                            
+                            <tr>
+                                <td>
+                                    <code class="text-primary">@billing.InvoiceNumber</code>
+                                    @if (billing.HasPrescription)
+                                    {
+                                        <i class="bi bi-capsule text-info ms-1" title="Prescription"></i>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="fw-medium">@billing.PatientName</span>
+                                    <br>
+                                    <small class="text-muted">@billing.PatientClinicNumber</small>
+                                </td>
+                                <td>@billing.BillingDate.ToString("MMM dd, yyyy")</td>
+                                <td class="text-end">@billing.TotalAmount.ToString("C")</td>
+                                <td class="text-end text-success">@billing.AmountPaid.ToString("C")</td>
+                                <td class="text-end text-danger fw-bold">@billing.BalanceDue.ToString("C")</td>
+                                <td>
+                                    @{
+                                        var statusClass = billing.PaymentStatus switch
+                                        {
+                                            PaymentStatus.PartiallyPaid => "bg-warning text-dark",
+                                            PaymentStatus.Pending => "bg-secondary",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@billing.PaymentStatus</span>
+                                </td>
+                                <td>
+                                    <span class="@ageClass">
+                                        @daysOld days
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@billing.BillingId" 
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Payment" asp-route-id="@billing.BillingId" 
+                                           class="btn btn-success" title="Record Payment">
+                                            <i class="bi bi-credit-card me-1"></i> Pay
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <td colspan="5" class="text-end fw-bold">Total Outstanding:</td>
+                            <td class="text-end text-danger fw-bold fs-5">@totalOutstanding.ToString("C")</td>
+                            <td colspan="3"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-check-circle fs-1 text-success d-block mb-3"></i>
+                <h5 class="text-success">All Caught Up!</h5>
+                <p class="text-muted">No pending payments at this time</p>
+                <a asp-action="Index" class="btn btn-outline-primary">View All Billings</a>
+            </div>
+        }
+    </div>
+</div>
+
+@if (Model.Any(b => (DateTime.Today - b.BillingDate).Days > 30))
+{
+    <!-- Overdue Notice -->
+    <div class="card mt-4 border-danger">
+        <div class="card-header bg-danger text-white">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            <strong>Overdue Invoices (30+ days)</strong>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <thead>
+                        <tr>
+                            <th>Invoice #</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Days Overdue</th>
+                            <th class="text-end">Balance Due</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var billing in Model.Where(b => (DateTime.Today - b.BillingDate).Days > 30)
+                                                     .OrderBy(b => b.BillingDate))
+                        {
+                            var daysOld = (DateTime.Today - billing.BillingDate).Days;
+                            <tr class="table-danger">
+                                <td><code>@billing.InvoiceNumber</code></td>
+                                <td>@billing.PatientName</td>
+                                <td>@billing.BillingDate.ToString("MMM dd, yyyy")</td>
+                                <td><span class="badge bg-danger">@daysOld days</span></td>
+                                <td class="text-end fw-bold">@billing.BalanceDue.ToString("C")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}

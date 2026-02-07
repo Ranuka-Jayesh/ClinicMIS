@@ -1,0 +1,157 @@
+@model ClinicMIS.Models.ViewModels.VisitCreateViewModel
+@{
+    ViewData["Title"] = "Schedule New Visit";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-calendar-plus me-2"></i>Schedule New Visit
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    
+                    <!-- Patient Selection -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-person me-2"></i>Patient Information</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label asp-for="PatientId" class="form-label"></label>
+                            @if (Model.PatientId > 0 && Model.AvailablePatients?.Any() == true)
+                            {
+                                @* Patient pre-selected *@
+                                <select asp-for="PatientId" class="form-select" disabled>
+                                    @foreach (var patient in Model.AvailablePatients)
+                                    {
+                                        <option value="@patient.PatientId" selected>
+                                            @patient.FullName (@patient.ClinicNumber) - @patient.PhoneNumber
+                                        </option>
+                                    }
+                                </select>
+                                <input type="hidden" asp-for="PatientId" />
+                            }
+                            else
+                            {
+                                <select asp-for="PatientId" class="form-select" id="patientSearch">
+                                    <option value="">Select Patient...</option>
+                                    @if (Model.AvailablePatients != null)
+                                    {
+                                        @foreach (var patient in Model.AvailablePatients)
+                                        {
+                                            <option value="@patient.PatientId">
+                                                @patient.FullName (@patient.ClinicNumber) - @patient.PhoneNumber
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            }
+                            <span asp-validation-for="PatientId" class="text-danger small"></span>
+                            @if (Model.PatientId == 0)
+                            {
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Start typing to search for a patient by name or clinic number.
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Visit Details -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-calendar-event me-2"></i>Visit Details</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="VisitDate" class="form-label"></label>
+                            <input asp-for="VisitDate" type="date" class="form-control" />
+                            <span asp-validation-for="VisitDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ClinicId" class="form-label"></label>
+                            <select asp-for="ClinicId" class="form-select">
+                                <option value="">Select Clinic...</option>
+                                @if (Model.AvailableClinics != null)
+                                {
+                                    @foreach (var clinic in Model.AvailableClinics)
+                                    {
+                                        <option value="@clinic.ClinicId">@clinic.Name</option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="ClinicId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="DoctorId" class="form-label"></label>
+                            <select asp-for="DoctorId" class="form-select">
+                                <option value="">Select Doctor (Optional)...</option>
+                                @if (Model.AvailableDoctors != null)
+                                {
+                                    @foreach (var doctor in Model.AvailableDoctors)
+                                    {
+                                        <option value="@doctor.StaffId">
+                                            Dr. @doctor.FirstName @doctor.LastName
+                                            @if (!string.IsNullOrEmpty(doctor.Specialization))
+                                            {
+                                                @($" - {doctor.Specialization}")
+                                            }
+                                        </option>
+                                    }
+                                }
+                            </select>
+                            <span asp-validation-for="DoctorId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Reason for Visit -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-chat-left-text me-2"></i>Reason for Visit</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label asp-for="ReasonForVisit" class="form-label"></label>
+                            <textarea asp-for="ReasonForVisit" class="form-control" rows="3" 
+                                      placeholder="Describe the reason for this visit..."></textarea>
+                            <span asp-validation-for="ReasonForVisit" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4" />
+                    
+                    <div class="d-flex justify-content-between">
+                        @if (Model.PatientId > 0)
+                        {
+                            <a asp-controller="Patients" asp-action="Details" asp-route-id="@Model.PatientId" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Patient
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Cancel
+                            </a>
+                        }
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-calendar-check me-1"></i> Schedule Visit
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        // Patient search functionality if needed in future
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set minimum date to today for visit date
+            var today = new Date().toISOString().split('T')[0];
+            var visitDateInput = document.querySelector('input[name="VisitDate"]');
+            if (visitDateInput && !visitDateInput.value) {
+                visitDateInput.value = today;
+            }
+        });
+    </script>
+}

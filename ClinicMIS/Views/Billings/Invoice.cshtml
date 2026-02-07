@@ -1,0 +1,370 @@
+@model ClinicMIS.Models.ViewModels.InvoiceViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Invoice";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Invoice - @Model.Billing.InvoiceNumber</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #333;
+            padding: 20px;
+        }
+        .invoice-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 3px solid #0d6efd;
+        }
+        .logo h1 {
+            font-size: 28px;
+            color: #0d6efd;
+            margin-bottom: 5px;
+        }
+        .logo p {
+            color: #666;
+            font-size: 12px;
+        }
+        .invoice-title {
+            text-align: right;
+        }
+        .invoice-title h2 {
+            font-size: 32px;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .invoice-number {
+            font-size: 16px;
+            color: #0d6efd;
+            font-family: monospace;
+        }
+        .invoice-date {
+            color: #666;
+            margin-top: 5px;
+        }
+        .info-section {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+        }
+        .info-box {
+            width: 48%;
+        }
+        .info-box h4 {
+            color: #666;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .info-box p {
+            margin-bottom: 3px;
+        }
+        .info-box strong {
+            font-size: 16px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+        }
+        th {
+            background: #f8f9fa;
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid #dee2e6;
+        }
+        th.text-center { text-align: center; }
+        th.text-right { text-align: right; }
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            vertical-align: top;
+        }
+        td.text-center { text-align: center; }
+        td.text-right { text-align: right; }
+        .drug-name {
+            font-weight: 600;
+        }
+        .drug-generic {
+            font-size: 12px;
+            color: #666;
+        }
+        .dosage {
+            font-size: 12px;
+            color: #666;
+        }
+        .totals-section {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .totals-table {
+            width: 300px;
+        }
+        .totals-table td {
+            border: none;
+            padding: 8px 12px;
+        }
+        .totals-table .subtotal td {
+            border-top: 1px solid #dee2e6;
+        }
+        .totals-table .total td {
+            border-top: 2px solid #333;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .totals-table .paid {
+            color: #198754;
+        }
+        .totals-table .balance td {
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .totals-table .balance.due {
+            color: #dc3545;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-paid { background: #d1e7dd; color: #0f5132; }
+        .status-pending { background: #e2e3e5; color: #41464b; }
+        .status-partial { background: #fff3cd; color: #664d03; }
+        .footer {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            text-align: center;
+            color: #666;
+            font-size: 12px;
+        }
+        @@media print {
+            body { padding: 0; }
+            .invoice-container { padding: 20px; }
+            .no-print { display: none !important; }
+        }
+        .print-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: #0d6efd;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .print-button:hover {
+            background: #0b5ed7;
+        }
+    </style>
+</head>
+<body>
+    <button class="print-button no-print" onclick="window.print()">
+        🖨️ Print Invoice
+    </button>
+
+    <div class="invoice-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="logo">
+                <h1>ClinicMIS</h1>
+                <p>Healthcare Management System</p>
+            </div>
+            <div class="invoice-title">
+                <h2>INVOICE</h2>
+                <div class="invoice-number">@Model.Billing.InvoiceNumber</div>
+                <div class="invoice-date">Date: @Model.Billing.BillingDate.ToString("MMMM dd, yyyy")</div>
+            </div>
+        </div>
+
+        <!-- Info Section -->
+        <div class="info-section">
+            <div class="info-box">
+                <h4>Bill To</h4>
+                <p><strong>@Model.Patient.FullName</strong></p>
+                <p>Clinic #: @Model.Patient.ClinicNumber</p>
+                <p>Phone: @Model.Patient.PhoneNumber</p>
+                @if (!string.IsNullOrEmpty(Model.Patient.Email))
+                {
+                    <p>Email: @Model.Patient.Email</p>
+                }
+                @if (!string.IsNullOrEmpty(Model.Patient.Address))
+                {
+                    <p>@Model.Patient.Address</p>
+                    @if (!string.IsNullOrEmpty(Model.Patient.City))
+                    {
+                        <p>@Model.Patient.City</p>
+                    }
+                }
+            </div>
+            <div class="info-box">
+                <h4>Payment Status</h4>
+                @{
+                    var statusClass = Model.Billing.PaymentStatus switch
+                    {
+                        PaymentStatus.Paid => "status-paid",
+                        PaymentStatus.PartiallyPaid => "status-partial",
+                        _ => "status-pending"
+                    };
+                }
+                <span class="status-badge @statusClass">@Model.Billing.PaymentStatus</span>
+                @if (Model.Billing.PaymentDate.HasValue)
+                {
+                    <p style="margin-top: 10px;">Paid: @Model.Billing.PaymentDate.Value.ToString("MMM dd, yyyy")</p>
+                }
+                @if (Model.Billing.PaymentMethod.HasValue)
+                {
+                    <p>Method: @Model.Billing.PaymentMethod</p>
+                }
+            </div>
+        </div>
+
+        <!-- Prescription Info (if applicable) -->
+        @if (Model.Prescription != null)
+        {
+            <div style="margin-bottom: 20px; padding: 10px; background: #f8f9fa; border-radius: 5px;">
+                <small style="color: #666;">Prescription #: <strong>@Model.Prescription.PrescriptionNumber</strong></small>
+            </div>
+        }
+
+        <!-- Items Table -->
+        @if (Model.PrescriptionItems != null && Model.PrescriptionItems.Any())
+        {
+            <table>
+                <thead>
+                    <tr>
+                        <th>Item</th>
+                        <th>Instructions</th>
+                        <th class="text-center">Qty</th>
+                        <th class="text-right">Unit Price</th>
+                        <th class="text-right">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.PrescriptionItems)
+                    {
+                        var itemTotal = item.Quantity * item.UnitPrice;
+                        <tr>
+                            <td>
+                                <div class="drug-name">@item.Drug?.Name</div>
+                                @if (!string.IsNullOrEmpty(item.Drug?.GenericName))
+                                {
+                                    <div class="drug-generic">@item.Drug.GenericName</div>
+                                }
+                            </td>
+                            <td class="dosage">@item.DosageInstructions</td>
+                            <td class="text-center">@item.Quantity</td>
+                            <td class="text-right">@item.UnitPrice.ToString("C")</td>
+                            <td class="text-right">@itemTotal.ToString("C")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+
+        <!-- Totals Section -->
+        <div class="totals-section">
+            <table class="totals-table">
+                <tbody>
+                    @if (Model.Billing.ConsultationFee > 0)
+                    {
+                        <tr>
+                            <td>Consultation Fee</td>
+                            <td class="text-right">@Model.Billing.ConsultationFee.ToString("C")</td>
+                        </tr>
+                    }
+                    @if (Model.Billing.MedicationCost > 0)
+                    {
+                        <tr>
+                            <td>Medication Cost</td>
+                            <td class="text-right">@Model.Billing.MedicationCost.ToString("C")</td>
+                        </tr>
+                    }
+                    @if (Model.Billing.OtherCharges > 0)
+                    {
+                        <tr>
+                            <td>Other Charges</td>
+                            <td class="text-right">@Model.Billing.OtherCharges.ToString("C")</td>
+                        </tr>
+                    }
+                    <tr class="subtotal">
+                        <td><strong>Subtotal</strong></td>
+                        <td class="text-right"><strong>@Model.Billing.SubTotal.ToString("C")</strong></td>
+                    </tr>
+                    @if (Model.Billing.Discount > 0)
+                    {
+                        <tr>
+                            <td>Discount</td>
+                            <td class="text-right" style="color: #198754;">- @Model.Billing.Discount.ToString("C")</td>
+                        </tr>
+                    }
+                    @if (Model.Billing.Tax > 0)
+                    {
+                        <tr>
+                            <td>Tax</td>
+                            <td class="text-right">@Model.Billing.Tax.ToString("C")</td>
+                        </tr>
+                    }
+                    <tr class="total">
+                        <td>TOTAL</td>
+                        <td class="text-right">@Model.Billing.TotalAmount.ToString("C")</td>
+                    </tr>
+                    <tr class="paid">
+                        <td>Amount Paid</td>
+                        <td class="text-right">@Model.Billing.AmountPaid.ToString("C")</td>
+                    </tr>
+                    <tr class="balance @(Model.Billing.BalanceDue > 0 ? "due" : "")">
+                        <td>Balance Due</td>
+                        <td class="text-right">@Model.Billing.BalanceDue.ToString("C")</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Notes -->
+        @if (!string.IsNullOrEmpty(Model.Billing.Notes))
+        {
+            <div style="margin-top: 30px; padding: 15px; background: #fff3cd; border-radius: 5px;">
+                <strong>Notes:</strong> @Model.Billing.Notes
+            </div>
+        }
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Thank you for choosing ClinicMIS Healthcare</p>
+            <p style="margin-top: 5px;">For questions about this invoice, please contact the billing department.</p>
+        </div>
+    </div>
+</body>
+</html>

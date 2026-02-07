@@ -1,0 +1,263 @@
+@model ClinicMIS.Models.ViewModels.VisitListViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Visits";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">@Model.TotalCount visits found</span>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-calendar-plus me-1"></i> Schedule New Visit
+    </a>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label asp-for="FromDate" class="form-label small text-muted"></label>
+                <input asp-for="FromDate" type="date" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="ToDate" class="form-label small text-muted"></label>
+                <input asp-for="ToDate" type="date" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3">
+                <label asp-for="ClinicId" class="form-label small text-muted"></label>
+                <select asp-for="ClinicId" class="form-select form-select-sm">
+                    <option value="">All Clinics</option>
+                    @if (Model.AvailableClinics != null)
+                    {
+                        @foreach (var clinic in Model.AvailableClinics)
+                        {
+                            <option value="@clinic.ClinicId">@clinic.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="DoctorId" class="form-label small text-muted"></label>
+                <select asp-for="DoctorId" class="form-select form-select-sm">
+                    <option value="">All Doctors</option>
+                    @if (Model.AvailableDoctors != null)
+                    {
+                        @foreach (var doctor in Model.AvailableDoctors)
+                        {
+                            <option value="@doctor.StaffId">Dr. @doctor.FirstName @doctor.LastName</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="Status" class="form-label small text-muted"></label>
+                <select asp-for="Status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    @foreach (VisitStatus status in Enum.GetValues(typeof(VisitStatus)))
+                    {
+                        <option value="@((int)status)">@status</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label asp-for="SearchTerm" class="form-label small text-muted">Search</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input asp-for="SearchTerm" class="form-control" placeholder="Visit #, patient name..." />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <label asp-for="SortBy" class="form-label small text-muted">Sort By</label>
+                <select asp-for="SortBy" class="form-select form-select-sm">
+                    <option value="">Default (Date)</option>
+                    <option value="patient">Patient Name</option>
+                    <option value="clinic">Clinic</option>
+                    <option value="doctor">Doctor</option>
+                    <option value="status">Status</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex align-items-end gap-2">
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" asp-for="SortDescending" />
+                    <label class="form-check-label small" asp-for="SortDescending">Desc</label>
+                </div>
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-funnel"></i> Filter
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Filters -->
+<div class="mb-3">
+    <div class="btn-group btn-group-sm" role="group">
+        <a href="@Url.Action("Index", new { FromDate = DateTime.Today, ToDate = DateTime.Today })" 
+           class="btn @(Model.FromDate?.Date == DateTime.Today && Model.ToDate?.Date == DateTime.Today ? "btn-primary" : "btn-outline-primary")">
+            Today
+        </a>
+        <a href="@Url.Action("Index", new { FromDate = DateTime.Today.AddDays(-7), ToDate = DateTime.Today })" 
+           class="btn btn-outline-primary">
+            Last 7 Days
+        </a>
+        <a href="@Url.Action("Index", new { Status = (int)VisitStatus.Scheduled })" 
+           class="btn @(Model.Status == VisitStatus.Scheduled ? "btn-warning" : "btn-outline-warning")">
+            Scheduled
+        </a>
+        <a href="@Url.Action("Index", new { Status = (int)VisitStatus.InProgress })" 
+           class="btn @(Model.Status == VisitStatus.InProgress ? "btn-info" : "btn-outline-info")">
+            In Progress
+        </a>
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+            Clear Filters
+        </a>
+    </div>
+</div>
+
+<!-- Visits Table -->
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Visits.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Visit #</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Clinic</th>
+                            <th>Doctor</th>
+                            <th>Status</th>
+                            <th>Rx</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var visit in Model.Visits)
+                        {
+                            <tr>
+                                <td>
+                                    <code class="text-primary">@visit.VisitNumber</code>
+                                </td>
+                                <td>
+                                    <a asp-controller="Patients" asp-action="Details" asp-route-id="@visit.VisitId" 
+                                       class="text-decoration-none fw-medium">
+                                        @visit.PatientName
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">@visit.PatientClinicNumber</small>
+                                </td>
+                                <td>
+                                    @visit.VisitDate.ToString("MMM dd, yyyy")
+                                    @if (visit.VisitDate.Date == DateTime.Today)
+                                    {
+                                        <span class="badge bg-info ms-1">Today</span>
+                                    }
+                                </td>
+                                <td>@visit.ClinicName</td>
+                                <td>@(string.IsNullOrEmpty(visit.DoctorName) ? "—" : visit.DoctorName)</td>
+                                <td>
+                                    @{
+                                        var statusClass = visit.Status switch
+                                        {
+                                            VisitStatus.Completed => "bg-success",
+                                            VisitStatus.InProgress => "bg-primary",
+                                            VisitStatus.CheckedIn => "bg-info",
+                                            VisitStatus.Scheduled => "bg-warning text-dark",
+                                            VisitStatus.Cancelled => "bg-danger",
+                                            VisitStatus.NoShow => "bg-secondary",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@visit.Status</span>
+                                </td>
+                                <td>
+                                    @if (visit.HasPrescription)
+                                    {
+                                        <i class="bi bi-check-circle-fill text-success" title="Has Prescription"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="bi bi-dash text-muted"></i>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@visit.VisitId" 
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (visit.Status == VisitStatus.CheckedIn || visit.Status == VisitStatus.InProgress)
+                                        {
+                                            <a asp-action="Consultation" asp-route-id="@visit.VisitId" 
+                                               class="btn btn-outline-success" title="Start/Continue Consultation">
+                                                <i class="bi bi-clipboard2-pulse"></i>
+                                            </a>
+                                        }
+                                        @if (visit.Status == VisitStatus.Scheduled)
+                                        {
+                                            <a asp-action="CheckIn" asp-route-id="@visit.VisitId" 
+                                               class="btn btn-outline-info" title="Check-In">
+                                                <i class="bi bi-box-arrow-in-right"></i>
+                                            </a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-between align-items-center p-3 border-top">
+                    <div class="text-muted small">
+                        Showing @((Model.CurrentPage - 1) * Model.PageSize + 1) to 
+                        @Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(Model.CurrentPage - 1)&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")&clinicId=@Model.ClinicId&doctorId=@Model.DoctorId&status=@((int?)Model.Status)&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&sortDescending=@Model.SortDescending">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="?page=@i&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")&clinicId=@Model.ClinicId&doctorId=@Model.DoctorId&status=@((int?)Model.Status)&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&sortDescending=@Model.SortDescending">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(Model.CurrentPage + 1)&fromDate=@Model.FromDate?.ToString("yyyy-MM-dd")&toDate=@Model.ToDate?.ToString("yyyy-MM-dd")&clinicId=@Model.ClinicId&doctorId=@Model.DoctorId&status=@((int?)Model.Status)&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&sortDescending=@Model.SortDescending">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-calendar-x fs-1 text-muted d-block mb-3"></i>
+                <h5 class="text-muted">No visits found</h5>
+                @if (Model.FromDate.HasValue || Model.ToDate.HasValue || Model.ClinicId.HasValue || 
+                     Model.DoctorId.HasValue || Model.Status.HasValue || !string.IsNullOrEmpty(Model.SearchTerm))
+                {
+                    <p class="text-muted">Try adjusting your filter criteria</p>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-primary">Clear Filters</a>
+                }
+                else
+                {
+                    <p class="text-muted">No visits have been scheduled yet</p>
+                    <a asp-action="Create" class="btn btn-primary">Schedule Visit</a>
+                }
+            </div>
+        }
+    </div>
+</div>

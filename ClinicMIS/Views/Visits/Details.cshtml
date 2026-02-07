@@ -1,0 +1,328 @@
+@model ClinicMIS.Models.Entities.Visit
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Visit Details";
+    var statusClass = Model.Status switch
+    {
+        VisitStatus.Scheduled => "bg-secondary",
+        VisitStatus.CheckedIn => "bg-info",
+        VisitStatus.InProgress => "bg-warning text-dark",
+        VisitStatus.Completed => "bg-success",
+        VisitStatus.Cancelled => "bg-danger",
+        VisitStatus.NoShow => "bg-dark",
+        _ => "bg-secondary"
+    };
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Visit Information Card -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-calendar-check me-2"></i>Visit Information
+                </div>
+                <span class="badge @statusClass">@Model.Status</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <small class="text-muted">Visit Number</small><br />
+                        <code class="text-primary fs-5">@Model.VisitNumber</code>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Visit Date</small><br />
+                        <strong>@Model.VisitDate.ToString("dddd, MMMM dd, yyyy")</strong>
+                    </div>
+                    <div class="col-md-4">
+                        <small class="text-muted">Clinic</small><br />
+                        <strong>@Model.Clinic?.Name</strong>
+                    </div>
+                </div>
+                
+                <hr />
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3"><i class="bi bi-person me-2"></i>Patient</h6>
+                        <p class="mb-1">
+                            <strong>@Model.Patient?.FullName</strong>
+                        </p>
+                        <small class="text-muted">Clinic #: @Model.Patient?.ClinicNumber</small><br />
+                        <small class="text-muted">Age: @Model.Patient?.Age years | @Model.Patient?.Gender</small>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-3"><i class="bi bi-person-badge me-2"></i>Attending Doctor</h6>
+                        @if (Model.Doctor != null)
+                        {
+                            <p class="mb-1"><strong>@Model.Doctor.DisplayTitle</strong></p>
+                            <small class="text-muted">@Model.Doctor.Specialization</small>
+                        }
+                        else
+                        {
+                            <p class="text-muted">Not assigned</p>
+                        }
+                    </div>
+                </div>
+                
+                @if (!string.IsNullOrEmpty(Model.ReasonForVisit))
+                {
+                    <hr />
+                    <h6 class="text-muted mb-2"><i class="bi bi-chat-left-text me-2"></i>Reason for Visit</h6>
+                    <p class="mb-0">@Model.ReasonForVisit</p>
+                }
+                
+                @if (Model.CheckInTime.HasValue || Model.CheckOutTime.HasValue)
+                {
+                    <hr />
+                    <div class="row">
+                        <div class="col-md-6">
+                            <small class="text-muted">Check-in Time</small><br />
+                            @if (Model.CheckInTime.HasValue)
+                            {
+                                <span>@DateTime.Today.Add(Model.CheckInTime.Value).ToString("hh:mm tt")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted">Check-out Time</small><br />
+                            @if (Model.CheckOutTime.HasValue)
+                            {
+                                <span>@DateTime.Today.Add(Model.CheckOutTime.Value).ToString("hh:mm tt")</span>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+        
+        <!-- Vital Signs -->
+        @if (Model.BloodPressure != null || Model.Temperature != null || Model.PulseRate != null || Model.Weight != null || Model.Height != null)
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-heart-pulse me-2"></i>Vital Signs
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-activity fs-4 text-danger"></i>
+                                <div class="small text-muted mt-1">Blood Pressure</div>
+                                <strong>@(Model.BloodPressure ?? "—")</strong>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-thermometer-half fs-4 text-warning"></i>
+                                <div class="small text-muted mt-1">Temperature</div>
+                                <strong>@(Model.Temperature?.ToString("0.0") ?? "—") °C</strong>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-heart fs-4 text-danger"></i>
+                                <div class="small text-muted mt-1">Pulse Rate</div>
+                                <strong>@(Model.PulseRate?.ToString() ?? "—") bpm</strong>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-speedometer fs-4 text-info"></i>
+                                <div class="small text-muted mt-1">Weight</div>
+                                <strong>@(Model.Weight?.ToString("0.0") ?? "—") kg</strong>
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="border rounded p-3">
+                                <i class="bi bi-arrows-vertical fs-4 text-success"></i>
+                                <div class="small text-muted mt-1">Height</div>
+                                <strong>@(Model.Height?.ToString("0") ?? "—") cm</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        }
+        
+        <!-- Consultation Details -->
+        @if (!string.IsNullOrEmpty(Model.Symptoms) || !string.IsNullOrEmpty(Model.Diagnosis) || !string.IsNullOrEmpty(Model.DoctorNotes))
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-clipboard-pulse me-2"></i>Consultation Details
+                </div>
+                <div class="card-body">
+                    @if (!string.IsNullOrEmpty(Model.Symptoms))
+                    {
+                        <h6 class="text-muted">Symptoms</h6>
+                        <p>@Model.Symptoms</p>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.Diagnosis))
+                    {
+                        <h6 class="text-muted">Diagnosis</h6>
+                        <p>@Model.Diagnosis</p>
+                    }
+                    @if (!string.IsNullOrEmpty(Model.DoctorNotes))
+                    {
+                        <h6 class="text-muted">Doctor's Notes</h6>
+                        <p class="mb-0">@Model.DoctorNotes</p>
+                    }
+                </div>
+            </div>
+        }
+        
+        <!-- Prescriptions -->
+        @if (Model.Prescriptions.Any())
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-prescription2 me-2"></i>Prescriptions
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Prescription #</th>
+                                    <th>Date</th>
+                                    <th>Items</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var prescription in Model.Prescriptions)
+                                {
+                                    var rxStatusClass = prescription.Status switch
+                                    {
+                                        PrescriptionStatus.Draft => "bg-secondary",
+                                        PrescriptionStatus.SentToPharmacy => "bg-info",
+                                        PrescriptionStatus.Processing => "bg-warning text-dark",
+                                        PrescriptionStatus.ReadyForPickup => "bg-primary",
+                                        PrescriptionStatus.Dispensed => "bg-success",
+                                        PrescriptionStatus.Cancelled => "bg-danger",
+                                        _ => "bg-secondary"
+                                    };
+                                    <tr>
+                                        <td><code>@prescription.PrescriptionNumber</code></td>
+                                        <td>@prescription.PrescriptionDate.ToString("MMM dd, yyyy")</td>
+                                        <td>@prescription.PrescriptionItems.Count items</td>
+                                        <td><span class="badge @rxStatusClass">@prescription.Status</span></td>
+                                        <td class="text-end">
+                                            <a asp-controller="Prescriptions" asp-action="Details" asp-route-id="@prescription.PrescriptionId" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+    
+    <div class="col-lg-4">
+        <!-- Actions Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-gear me-2"></i>Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    @if (Model.Status == VisitStatus.Scheduled)
+                    {
+                        <form asp-action="CheckIn" asp-route-id="@Model.VisitId" method="post">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Check In Patient
+                            </button>
+                        </form>
+                    }
+                    
+                    @if (Model.Status == VisitStatus.CheckedIn || Model.Status == VisitStatus.InProgress)
+                    {
+                        <a asp-action="Consultation" asp-route-id="@Model.VisitId" class="btn btn-primary">
+                            <i class="bi bi-clipboard-pulse me-1"></i> Start/Continue Consultation
+                        </a>
+                    }
+                    
+                    @if (Model.Status == VisitStatus.InProgress)
+                    {
+                        <a asp-controller="Prescriptions" asp-action="Create" asp-route-visitId="@Model.VisitId" class="btn btn-info">
+                            <i class="bi bi-prescription2 me-1"></i> Create Prescription
+                        </a>
+                        
+                        <form asp-action="Complete" asp-route-id="@Model.VisitId" method="post"
+                              onsubmit="return confirm('Are you sure you want to complete this visit?');">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn btn-success w-100">
+                                <i class="bi bi-check-circle me-1"></i> Complete Visit
+                            </button>
+                        </form>
+                    }
+                    
+                    <hr />
+                    
+                    <a asp-controller="Patients" asp-action="Details" asp-route-id="@Model.PatientId" 
+                       class="btn btn-outline-primary">
+                        <i class="bi bi-person me-1"></i> View Patient
+                    </a>
+                    
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Visits
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Follow-up Card -->
+        @if (Model.FollowUpRequired)
+        {
+            <div class="card mb-4 border-warning">
+                <div class="card-header bg-warning bg-opacity-10">
+                    <i class="bi bi-calendar-event me-2"></i>Follow-up Required
+                </div>
+                <div class="card-body">
+                    @if (Model.FollowUpDate.HasValue)
+                    {
+                        <p class="mb-0">
+                            <strong>@Model.FollowUpDate.Value.ToString("dddd, MMMM dd, yyyy")</strong>
+                        </p>
+                    }
+                    else
+                    {
+                        <p class="text-muted mb-0">Date to be scheduled</p>
+                    }
+                </div>
+            </div>
+        }
+        
+        <!-- Patient Allergies Alert -->
+        @if (!string.IsNullOrEmpty(Model.Patient?.Allergies))
+        {
+            <div class="alert alert-danger">
+                <h6 class="alert-heading"><i class="bi bi-exclamation-triangle me-2"></i>Allergy Alert</h6>
+                <p class="mb-0 small">@Model.Patient.Allergies</p>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,108 @@
+@model ClinicMIS.Models.ViewModels.PaymentViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Record Payment";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-credit-card me-2"></i>Record Payment
+            </div>
+            <div class="card-body">
+                <!-- Invoice Summary -->
+                <div class="alert alert-info">
+                    <div class="row">
+                        <div class="col-6">
+                            <small class="text-muted">Invoice #</small><br />
+                            <code class="fs-5">@Model.InvoiceNumber</code>
+                        </div>
+                        <div class="col-6 text-end">
+                            <small class="text-muted">Patient</small><br />
+                            <strong>@Model.PatientName</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Amount Summary -->
+                <div class="row mb-4 text-center">
+                    <div class="col-4">
+                        <div class="border rounded p-3">
+                            <small class="text-muted d-block">Total</small>
+                            <span class="fs-5 fw-bold">@Model.TotalAmount.ToString("C")</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-3 bg-light">
+                            <small class="text-muted d-block">Paid</small>
+                            <span class="fs-5 fw-bold text-success">@Model.AmountPaid.ToString("C")</span>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="border rounded p-3 @(Model.BalanceDue > 0 ? "border-danger" : "border-success")">
+                            <small class="text-muted d-block">Balance</small>
+                            <span class="fs-5 fw-bold @(Model.BalanceDue > 0 ? "text-danger" : "text-success")">
+                                @Model.BalanceDue.ToString("C")
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <form asp-action="Payment" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" asp-for="BillingId" />
+                    <input type="hidden" asp-for="InvoiceNumber" />
+                    <input type="hidden" asp-for="PatientName" />
+                    <input type="hidden" asp-for="TotalAmount" />
+                    <input type="hidden" asp-for="AmountPaid" />
+
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="PaymentAmount" class="form-label"></label>
+                        <div class="input-group">
+                            <span class="input-group-text">$</span>
+                            <input asp-for="PaymentAmount" class="form-control form-control-lg" 
+                                   type="number" step="0.01" min="0.01" max="@Model.BalanceDue" />
+                        </div>
+                        <span asp-validation-for="PaymentAmount" class="text-danger"></span>
+                        <div class="form-text">Maximum payable: @Model.BalanceDue.ToString("C")</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="PaymentMethod" class="form-label"></label>
+                        <select asp-for="PaymentMethod" class="form-select">
+                            <option value="">-- Select Method --</option>
+                            @foreach (PaymentMethod method in Enum.GetValues(typeof(PaymentMethod)))
+                            {
+                                <option value="@((int)method)">@method</option>
+                            }
+                        </select>
+                        <span asp-validation-for="PaymentMethod" class="text-danger"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Notes" class="form-label"></label>
+                        <textarea asp-for="Notes" class="form-control" rows="2" 
+                                  placeholder="Optional payment notes..."></textarea>
+                        <span asp-validation-for="Notes" class="text-danger"></span>
+                    </div>
+
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Details" asp-route-id="@Model.BillingId" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-success btn-lg">
+                            <i class="bi bi-check-circle me-1"></i> Record Payment
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

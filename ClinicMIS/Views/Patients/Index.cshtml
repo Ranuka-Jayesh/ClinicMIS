@@ -1,0 +1,167 @@
+@model ClinicMIS.Models.ViewModels.PatientListViewModel
+@{
+    ViewData["Title"] = "Patients";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">@Model.TotalCount patients registered</span>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg me-1"></i> Register New Patient
+    </a>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="searchTerm" class="form-control" 
+                           placeholder="Search by name, clinic number, phone..." 
+                           value="@Model.SearchTerm" />
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="sortBy" class="form-select">
+                    <option value="">Sort by...</option>
+                    <option value="name" selected="@(Model.SortBy == "name")">Name</option>
+                    <option value="clinicnumber" selected="@(Model.SortBy == "clinicnumber")">Clinic Number</option>
+                    <option value="registrationdate" selected="@(Model.SortBy == "registrationdate")">Registration Date</option>
+                    <option value="dateofbirth" selected="@(Model.SortBy == "dateofbirth")">Age</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <div class="form-check form-switch mt-2">
+                    <input class="form-check-input" type="checkbox" name="sortDesc" value="true" 
+                           @(Model.SortDescending ? "checked" : "") />
+                    <label class="form-check-label">Descending</label>
+                </div>
+            </div>
+            <div class="col-md-1">
+                <button type="submit" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Patients Table -->
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Patients.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Clinic Number</th>
+                            <th>Patient Name</th>
+                            <th>Age</th>
+                            <th>Gender</th>
+                            <th>Phone</th>
+                            <th>Registered</th>
+                            <th>Visits</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var patient in Model.Patients)
+                        {
+                            <tr>
+                                <td>
+                                    <code class="text-primary">@patient.ClinicNumber</code>
+                                </td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@patient.PatientId" class="text-decoration-none fw-medium">
+                                        @patient.FullName
+                                    </a>
+                                </td>
+                                <td>@patient.Age yrs</td>
+                                <td>
+                                    <span class="badge @(patient.Gender == "Male" ? "bg-primary" : "bg-pink")">
+                                        @patient.Gender
+                                    </span>
+                                </td>
+                                <td>@patient.PhoneNumber</td>
+                                <td>@patient.RegistrationDate.ToString("MMM dd, yyyy")</td>
+                                <td>
+                                    <span class="badge bg-secondary">@patient.TotalVisits</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@patient.PatientId" 
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@patient.PatientId" 
+                                           class="btn btn-outline-secondary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a asp-controller="Visits" asp-action="Create" asp-route-patientId="@patient.PatientId" 
+                                           class="btn btn-outline-success" title="New Visit">
+                                            <i class="bi bi-calendar-plus"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-between align-items-center p-3 border-top">
+                    <div class="text-muted small">
+                        Showing @((Model.CurrentPage - 1) * Model.PageSize + 1) to 
+                        @Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(Model.CurrentPage - 1)&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&sortDesc=@Model.SortDescending">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="?page=@i&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&sortDesc=@Model.SortDescending">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(Model.CurrentPage + 1)&searchTerm=@Model.SearchTerm&sortBy=@Model.SortBy&sortDesc=@Model.SortDescending">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-people fs-1 text-muted d-block mb-3"></i>
+                <h5 class="text-muted">No patients found</h5>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm))
+                {
+                    <p class="text-muted">Try adjusting your search criteria</p>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-primary">Clear Search</a>
+                }
+                else
+                {
+                    <p class="text-muted">Get started by registering your first patient</p>
+                    <a asp-action="Create" class="btn btn-primary">Register Patient</a>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .bg-pink { background-color: #e91e8c; }
+</style>

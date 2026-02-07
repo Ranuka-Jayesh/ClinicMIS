@@ -1,0 +1,231 @@
+@model IEnumerable<ClinicMIS.Models.Entities.Prescription>
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Prescriptions";
+    var searchTerm = ViewBag.SearchTerm as string;
+    var status = ViewBag.Status as PrescriptionStatus?;
+    var fromDate = ViewBag.FromDate as DateTime?;
+    var toDate = ViewBag.ToDate as DateTime?;
+    var currentPage = (int)(ViewBag.CurrentPage ?? 1);
+    var totalCount = (int)(ViewBag.TotalCount ?? 0);
+    var pageSize = 10;
+    var totalPages = (int)Math.Ceiling((double)totalCount / pageSize);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">@totalCount prescriptions found</span>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-file-medical me-1"></i> New Prescription
+    </a>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">From Date</label>
+                <input type="date" name="fromDate" class="form-control form-control-sm" 
+                       value="@fromDate?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">To Date</label>
+                <input type="date" name="toDate" class="form-control form-control-sm" 
+                       value="@toDate?.ToString("yyyy-MM-dd")" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Status</label>
+                <select name="status" class="form-select form-select-sm">
+                    <option value="">All Statuses</option>
+                    @foreach (PrescriptionStatus s in Enum.GetValues(typeof(PrescriptionStatus)))
+                    {
+                        <option value="@((int)s)" selected="@(status == s)">@s</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Search</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="searchTerm" class="form-control" 
+                           placeholder="Rx #, patient name..." value="@searchTerm" />
+                </div>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="bi bi-funnel me-1"></i> Filter
+                </button>
+                <a href="@Url.Action("Index")" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-x-lg me-1"></i> Clear
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Filters -->
+<div class="mb-3">
+    <div class="btn-group btn-group-sm" role="group">
+        <a href="@Url.Action("Index", new { fromDate = DateTime.Today, toDate = DateTime.Today })" 
+           class="btn @(fromDate?.Date == DateTime.Today && toDate?.Date == DateTime.Today ? "btn-primary" : "btn-outline-primary")">
+            Today
+        </a>
+        <a href="@Url.Action("Index", new { status = (int)PrescriptionStatus.Draft })" 
+           class="btn @(status == PrescriptionStatus.Draft ? "btn-secondary" : "btn-outline-secondary")">
+            Draft
+        </a>
+        <a href="@Url.Action("Index", new { status = (int)PrescriptionStatus.SentToPharmacy })" 
+           class="btn @(status == PrescriptionStatus.SentToPharmacy ? "btn-warning" : "btn-outline-warning")">
+            Sent to Pharmacy
+        </a>
+        <a href="@Url.Action("Index", new { status = (int)PrescriptionStatus.Dispensed })" 
+           class="btn @(status == PrescriptionStatus.Dispensed ? "btn-success" : "btn-outline-success")">
+            Dispensed
+        </a>
+    </div>
+</div>
+
+<!-- Prescriptions Table -->
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Prescription #</th>
+                            <th>Patient</th>
+                            <th>Date</th>
+                            <th>Doctor</th>
+                            <th>Items</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var prescription in Model)
+                        {
+                            <tr>
+                                <td>
+                                    <code class="text-primary">@prescription.PrescriptionNumber</code>
+                                </td>
+                                <td>
+                                    <a asp-controller="Patients" asp-action="Details" asp-route-id="@prescription.PatientId" 
+                                       class="text-decoration-none fw-medium">
+                                        @prescription.Patient.FullName
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">@prescription.Patient.ClinicNumber</small>
+                                </td>
+                                <td>
+                                    @prescription.PrescriptionDate.ToString("MMM dd, yyyy")
+                                    @if (prescription.PrescriptionDate.Date == DateTime.Today)
+                                    {
+                                        <span class="badge bg-info ms-1">Today</span>
+                                    }
+                                </td>
+                                <td>
+                                    @if (prescription.Doctor != null)
+                                    {
+                                        <span>Dr. @prescription.Doctor.FirstName @prescription.Doctor.LastName</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">@prescription.PrescriptionItems.Count items</span>
+                                </td>
+                                <td>
+                                    @{
+                                        var statusClass = prescription.Status switch
+                                        {
+                                            PrescriptionStatus.Dispensed => "bg-success",
+                                            PrescriptionStatus.ReadyForPickup => "bg-info",
+                                            PrescriptionStatus.Processing => "bg-primary",
+                                            PrescriptionStatus.SentToPharmacy => "bg-warning text-dark",
+                                            PrescriptionStatus.Draft => "bg-secondary",
+                                            PrescriptionStatus.Cancelled => "bg-danger",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@prescription.Status</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@prescription.PrescriptionId" 
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        @if (prescription.Status == PrescriptionStatus.Draft)
+                                        {
+                                            <form asp-action="SendToPharmacy" asp-route-id="@prescription.PrescriptionId" 
+                                                  method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-success" 
+                                                        title="Send to Pharmacy" 
+                                                        onclick="return confirm('Send this prescription to pharmacy?')">
+                                                    <i class="bi bi-send"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            @if (totalPages > 1)
+            {
+                <nav class="d-flex justify-content-between align-items-center p-3 border-top">
+                    <div class="text-muted small">
+                        Showing @((currentPage - 1) * pageSize + 1) to 
+                        @Math.Min(currentPage * pageSize, totalCount) of @totalCount
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(currentPage - 1)&searchTerm=@searchTerm&status=@((int?)status)&fromDate=@fromDate?.ToString("yyyy-MM-dd")&toDate=@toDate?.ToString("yyyy-MM-dd")">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= totalPages; i++)
+                        {
+                            <li class="page-item @(i == currentPage ? "active" : "")">
+                                <a class="page-link" href="?page=@i&searchTerm=@searchTerm&status=@((int?)status)&fromDate=@fromDate?.ToString("yyyy-MM-dd")&toDate=@toDate?.ToString("yyyy-MM-dd")">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
+                            <a class="page-link" href="?page=@(currentPage + 1)&searchTerm=@searchTerm&status=@((int?)status)&fromDate=@fromDate?.ToString("yyyy-MM-dd")&toDate=@toDate?.ToString("yyyy-MM-dd")">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-file-medical fs-1 text-muted d-block mb-3"></i>
+                <h5 class="text-muted">No prescriptions found</h5>
+                @if (!string.IsNullOrEmpty(searchTerm) || status.HasValue || fromDate.HasValue || toDate.HasValue)
+                {
+                    <p class="text-muted">Try adjusting your filter criteria</p>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-primary">Clear Filters</a>
+                }
+                else
+                {
+                    <p class="text-muted">No prescriptions have been created yet</p>
+                    <a asp-action="Create" class="btn btn-primary">Create Prescription</a>
+                }
+            </div>
+        }
+    </div>
+</div>

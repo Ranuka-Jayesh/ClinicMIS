@@ -1,0 +1,315 @@
+@model ClinicMIS.Models.Entities.Billing
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Invoice Details";
+    var statusClass = Model.PaymentStatus switch
+    {
+        PaymentStatus.Paid => "bg-success",
+        PaymentStatus.PartiallyPaid => "bg-warning text-dark",
+        PaymentStatus.Pending => "bg-secondary",
+        PaymentStatus.Refunded => "bg-info",
+        PaymentStatus.Waived => "bg-dark",
+        _ => "bg-secondary"
+    };
+}
+
+@if (TempData["SuccessMessage"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+@if (TempData["ErrorMessage"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="bi bi-exclamation-triangle me-2"></i>@TempData["ErrorMessage"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <!-- Invoice Header -->
+        <div class="card mb-4">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-receipt me-2"></i>Invoice Details
+                </div>
+                <span class="badge @statusClass fs-6">@Model.PaymentStatus</span>
+            </div>
+            <div class="card-body">
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <h4 class="mb-1">
+                            <code class="text-primary fs-4">@Model.InvoiceNumber</code>
+                        </h4>
+                        <p class="text-muted mb-0">
+                            <i class="bi bi-calendar3 me-1"></i>
+                            @Model.BillingDate.ToString("MMMM dd, yyyy")
+                        </p>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <div class="fs-2 fw-bold @(Model.BalanceDue > 0 ? "text-danger" : "text-success")">
+                            @Model.TotalAmount.ToString("C")
+                        </div>
+                        <small class="text-muted">Total Amount</small>
+                    </div>
+                </div>
+
+                <hr />
+
+                <!-- Patient Information -->
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6 class="text-muted mb-2"><i class="bi bi-person me-1"></i>Patient</h6>
+                        <p class="mb-1">
+                            <strong>@Model.Patient.FullName</strong>
+                        </p>
+                        <p class="mb-0 text-muted">
+                            <small>Clinic #: @Model.Patient.ClinicNumber</small><br />
+                            <small><i class="bi bi-telephone me-1"></i>@Model.Patient.PhoneNumber</small>
+                        </p>
+                    </div>
+                    <div class="col-md-6">
+                        @if (Model.Prescription != null)
+                        {
+                            <h6 class="text-muted mb-2"><i class="bi bi-prescription2 me-1"></i>Prescription</h6>
+                            <p class="mb-1">
+                                <code>@Model.Prescription.PrescriptionNumber</code>
+                            </p>
+                            <p class="mb-0 text-muted">
+                                <small>Dr. @Model.Prescription.Doctor?.FullName</small><br />
+                                <small>@Model.Prescription.PrescriptionDate.ToString("MMM dd, yyyy")</small>
+                            </p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prescription Items (if applicable) -->
+        @if (Model.Prescription?.PrescriptionItems != null && Model.Prescription.PrescriptionItems.Any())
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-capsule me-2"></i>Dispensed Medications
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Drug</th>
+                                    <th>Dosage</th>
+                                    <th class="text-center">Qty</th>
+                                    <th class="text-end">Unit Price</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var item in Model.Prescription.PrescriptionItems)
+                                {
+                                    var itemTotal = item.Quantity * item.UnitPrice;
+                                    <tr>
+                                        <td>
+                                            <strong>@item.Drug?.Name</strong>
+                                            @if (item.Drug?.GenericName != null)
+                                            {
+                                                <br /><small class="text-muted">@item.Drug.GenericName</small>
+                                            }
+                                        </td>
+                                        <td>
+                                            <small>@item.DosageInstructions</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-secondary">@item.Quantity</span>
+                                        </td>
+                                        <td class="text-end">@item.UnitPrice.ToString("C")</td>
+                                        <td class="text-end fw-medium">@itemTotal.ToString("C")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <!-- Billing Breakdown -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-calculator me-2"></i>Billing Summary
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tbody>
+                        @if (Model.ConsultationFee > 0)
+                        {
+                            <tr>
+                                <td>Consultation Fee</td>
+                                <td class="text-end">@Model.ConsultationFee.ToString("C")</td>
+                            </tr>
+                        }
+                        @if (Model.MedicationCost > 0)
+                        {
+                            <tr>
+                                <td>Medication Cost</td>
+                                <td class="text-end">@Model.MedicationCost.ToString("C")</td>
+                            </tr>
+                        }
+                        @if (Model.OtherCharges > 0)
+                        {
+                            <tr>
+                                <td>Other Charges</td>
+                                <td class="text-end">@Model.OtherCharges.ToString("C")</td>
+                            </tr>
+                        }
+                        <tr class="border-top">
+                            <td><strong>Subtotal</strong></td>
+                            <td class="text-end"><strong>@Model.SubTotal.ToString("C")</strong></td>
+                        </tr>
+                        @if (Model.Discount > 0)
+                        {
+                            <tr class="text-success">
+                                <td>Discount</td>
+                                <td class="text-end">- @Model.Discount.ToString("C")</td>
+                            </tr>
+                        }
+                        @if (Model.Tax > 0)
+                        {
+                            <tr>
+                                <td>Tax</td>
+                                <td class="text-end">@Model.Tax.ToString("C")</td>
+                            </tr>
+                        }
+                        <tr class="border-top fs-5">
+                            <td><strong>Total Amount</strong></td>
+                            <td class="text-end"><strong>@Model.TotalAmount.ToString("C")</strong></td>
+                        </tr>
+                        <tr class="text-success">
+                            <td>Amount Paid</td>
+                            <td class="text-end">@Model.AmountPaid.ToString("C")</td>
+                        </tr>
+                        <tr class="fs-5 @(Model.BalanceDue > 0 ? "text-danger" : "text-success")">
+                            <td><strong>Balance Due</strong></td>
+                            <td class="text-end"><strong>@Model.BalanceDue.ToString("C")</strong></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.Notes))
+        {
+            <div class="card mb-4">
+                <div class="card-header">
+                    <i class="bi bi-sticky me-2"></i>Notes
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">@Model.Notes</p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Actions Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-gear me-2"></i>Actions
+            </div>
+            <div class="card-body">
+                <div class="d-grid gap-2">
+                    @if (Model.PaymentStatus != PaymentStatus.Paid && Model.PaymentStatus != PaymentStatus.Waived)
+                    {
+                        <a asp-action="Payment" asp-route-id="@Model.BillingId" class="btn btn-success">
+                            <i class="bi bi-credit-card me-1"></i> Record Payment
+                        </a>
+                    }
+                    
+                    <a asp-action="Invoice" asp-route-id="@Model.BillingId" class="btn btn-outline-primary" target="_blank">
+                        <i class="bi bi-printer me-1"></i> Print Invoice
+                    </a>
+                    
+                    <a asp-controller="Patients" asp-action="Details" asp-route-id="@Model.PatientId" 
+                       class="btn btn-outline-secondary">
+                        <i class="bi bi-person me-1"></i> View Patient
+                    </a>
+                    
+                    @if (Model.PrescriptionId.HasValue)
+                    {
+                        <a asp-controller="Prescriptions" asp-action="Details" asp-route-id="@Model.PrescriptionId" 
+                           class="btn btn-outline-secondary">
+                            <i class="bi bi-prescription2 me-1"></i> View Prescription
+                        </a>
+                    }
+                    
+                    <hr />
+                    
+                    <a asp-action="Index" class="btn btn-outline-secondary">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Billings
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Status Card -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="bi bi-cash-stack me-2"></i>Payment Info
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Status</dt>
+                    <dd class="col-sm-7">
+                        <span class="badge @statusClass">@Model.PaymentStatus</span>
+                    </dd>
+                    
+                    @if (Model.PaymentMethod.HasValue)
+                    {
+                        <dt class="col-sm-5">Method</dt>
+                        <dd class="col-sm-7">@Model.PaymentMethod</dd>
+                    }
+                    
+                    @if (Model.PaymentDate.HasValue)
+                    {
+                        <dt class="col-sm-5">Paid On</dt>
+                        <dd class="col-sm-7">@Model.PaymentDate.Value.ToString("MMM dd, yyyy")</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <!-- Quick Info Card -->
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-info-circle me-2"></i>Quick Info
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled mb-0">
+                    <li class="mb-2">
+                        <small class="text-muted">Invoice #</small><br />
+                        <code>@Model.InvoiceNumber</code>
+                    </li>
+                    <li class="mb-2">
+                        <small class="text-muted">Billing Date</small><br />
+                        @Model.BillingDate.ToString("MMM dd, yyyy")
+                    </li>
+                    <li class="mb-2">
+                        <small class="text-muted">Patient</small><br />
+                        @Model.Patient.FullName
+                    </li>
+                    @if (Model.Prescription != null)
+                    {
+                        <li>
+                            <small class="text-muted">Prescription</small><br />
+                            <code>@Model.Prescription.PrescriptionNumber</code>
+                        </li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

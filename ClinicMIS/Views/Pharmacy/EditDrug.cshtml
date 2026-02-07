@@ -1,0 +1,157 @@
+@model ClinicMIS.Models.ViewModels.DrugViewModel
+@{
+    ViewData["Title"] = "Edit Drug";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-pencil me-2"></i>Edit Drug: @Model.Name
+            </div>
+            <div class="card-body">
+                <form asp-action="EditDrug" method="post">
+                    <input type="hidden" asp-for="DrugId" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    
+                    <!-- Basic Information -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-info-circle me-2"></i>Basic Information</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="DrugCode" class="form-label"></label>
+                            <input asp-for="DrugCode" class="form-control" readonly />
+                            <small class="text-muted">Drug code cannot be changed</small>
+                        </div>
+                        <div class="col-md-8">
+                            <label asp-for="Name" class="form-label"></label>
+                            <input asp-for="Name" class="form-control" placeholder="Brand/Trade name" />
+                            <span asp-validation-for="Name" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="GenericName" class="form-label"></label>
+                            <input asp-for="GenericName" class="form-control" placeholder="Generic/scientific name" />
+                            <span asp-validation-for="GenericName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Manufacturer" class="form-label"></label>
+                            <input asp-for="Manufacturer" class="form-control" />
+                            <span asp-validation-for="Manufacturer" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Classification -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-tags me-2"></i>Classification</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="Category" class="form-label"></label>
+                            <input asp-for="Category" class="form-control" list="categoryList" 
+                                   placeholder="e.g., Antibiotic, Analgesic" />
+                            <datalist id="categoryList">
+                                <option value="Antibiotic"></option>
+                                <option value="Analgesic"></option>
+                                <option value="Antipyretic"></option>
+                                <option value="Antihypertensive"></option>
+                                <option value="Antidiabetic"></option>
+                                <option value="Antihistamine"></option>
+                                <option value="Vitamin/Supplement"></option>
+                                <option value="Gastrointestinal"></option>
+                                <option value="Respiratory"></option>
+                                <option value="Dermatological"></option>
+                            </datalist>
+                            <span asp-validation-for="Category" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="DosageForm" class="form-label"></label>
+                            <select asp-for="DosageForm" class="form-select">
+                                <option value="">Select form...</option>
+                                <option value="Tablet">Tablet</option>
+                                <option value="Capsule">Capsule</option>
+                                <option value="Syrup">Syrup</option>
+                                <option value="Injection">Injection</option>
+                                <option value="Cream">Cream</option>
+                                <option value="Ointment">Ointment</option>
+                                <option value="Drops">Drops</option>
+                                <option value="Inhaler">Inhaler</option>
+                                <option value="Suppository">Suppository</option>
+                                <option value="Powder">Powder</option>
+                            </select>
+                            <span asp-validation-for="DosageForm" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Strength" class="form-label"></label>
+                            <input asp-for="Strength" class="form-control" placeholder="e.g., 500mg, 10ml" />
+                            <span asp-validation-for="Strength" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Pricing & Stock -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-currency-dollar me-2"></i>Pricing & Stock</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="UnitPrice" class="form-label"></label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input asp-for="UnitPrice" type="number" step="0.01" min="0.01" class="form-control" />
+                            </div>
+                            <span asp-validation-for="UnitPrice" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="QuantityInStock" class="form-label"></label>
+                            <input asp-for="QuantityInStock" type="number" class="form-control" readonly />
+                            <small class="text-muted">Use stock adjustment to modify</small>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="ReorderLevel" class="form-label"></label>
+                            <input asp-for="ReorderLevel" type="number" min="1" class="form-control" />
+                            <small class="text-muted">Alert when stock falls below this level</small>
+                            <span asp-validation-for="ReorderLevel" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Additional Details -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-calendar-event me-2"></i>Additional Details</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="ExpiryDate" class="form-label"></label>
+                            <input asp-for="ExpiryDate" type="date" class="form-control" />
+                            <span asp-validation-for="ExpiryDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-end">
+                            <div class="form-check">
+                                <input asp-for="RequiresPrescription" class="form-check-input" type="checkbox" />
+                                <label asp-for="RequiresPrescription" class="form-check-label"></label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label asp-for="StorageInstructions" class="form-label"></label>
+                            <textarea asp-for="StorageInstructions" class="form-control" rows="2"
+                                      placeholder="e.g., Store in cool, dry place. Keep away from light."></textarea>
+                            <span asp-validation-for="StorageInstructions" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4" />
+                    
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Inventory" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

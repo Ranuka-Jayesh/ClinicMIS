@@ -1,0 +1,136 @@
+@model ClinicMIS.Models.ViewModels.PatientCreateViewModel
+@{
+    ViewData["Title"] = "Register New Patient";
+}
+
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-person-plus me-2"></i>Patient Registration Form
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    
+                    <!-- Personal Information -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-person me-2"></i>Personal Information</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="FirstName" class="form-label"></label>
+                            <input asp-for="FirstName" class="form-control" />
+                            <span asp-validation-for="FirstName" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="LastName" class="form-label"></label>
+                            <input asp-for="LastName" class="form-control" />
+                            <span asp-validation-for="LastName" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="DateOfBirth" class="form-label"></label>
+                            <input asp-for="DateOfBirth" type="date" class="form-control" />
+                            <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Gender" class="form-label"></label>
+                            <select asp-for="Gender" class="form-select">
+                                <option value="">Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                            <span asp-validation-for="Gender" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="NationalId" class="form-label"></label>
+                            <input asp-for="NationalId" class="form-control" />
+                            <span asp-validation-for="NationalId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Contact Information -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-telephone me-2"></i>Contact Information</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="PhoneNumber" class="form-label"></label>
+                            <input asp-for="PhoneNumber" class="form-control" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label"></label>
+                            <input asp-for="Email" type="email" class="form-control" />
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label asp-for="Address" class="form-label"></label>
+                            <input asp-for="Address" class="form-control" />
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="City" class="form-label"></label>
+                            <input asp-for="City" class="form-control" />
+                        </div>
+                    </div>
+                    
+                    <!-- Emergency Contact -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-exclamation-triangle me-2"></i>Emergency Contact</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label asp-for="EmergencyContactName" class="form-label"></label>
+                            <input asp-for="EmergencyContactName" class="form-control" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="EmergencyContactPhone" class="form-label"></label>
+                            <input asp-for="EmergencyContactPhone" class="form-control" />
+                        </div>
+                    </div>
+                    
+                    <!-- Medical Information -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-heart-pulse me-2"></i>Medical Information</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label asp-for="BloodType" class="form-label"></label>
+                            <select asp-for="BloodType" class="form-select">
+                                <option value="">Unknown</option>
+                                <option value="A+">A+</option>
+                                <option value="A-">A-</option>
+                                <option value="B+">B+</option>
+                                <option value="B-">B-</option>
+                                <option value="AB+">AB+</option>
+                                <option value="AB-">AB-</option>
+                                <option value="O+">O+</option>
+                                <option value="O-">O-</option>
+                            </select>
+                        </div>
+                        <div class="col-md-8">
+                            <label asp-for="Allergies" class="form-label"></label>
+                            <textarea asp-for="Allergies" class="form-control" rows="2" 
+                                      placeholder="List any known allergies..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4" />
+                    
+                    <div class="d-flex justify-content-between">
+                        <a asp-action="Index" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-lg me-1"></i> Register Patient
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

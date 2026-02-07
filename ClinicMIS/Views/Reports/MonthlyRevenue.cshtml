@@ -1,0 +1,300 @@
+@model ClinicMIS.Models.ViewModels.MonthlyRevenueReportViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = $"Monthly Revenue Report - {Model.MonthName}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <form asp-action="MonthlyRevenue" method="get" class="d-flex gap-2">
+            <select name="month" class="form-select">
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i" selected="@(i == Model.Month)">@System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i)</option>
+                }
+            </select>
+            <select name="year" class="form-select">
+                @for (int y = DateTime.Today.Year; y >= DateTime.Today.Year - 2; y--)
+                {
+                    <option value="@y" selected="@(y == Model.Year)">@y</option>
+                }
+            </select>
+            <button type="submit" class="btn btn-success">View Report</button>
+        </form>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-secondary">
+        <i class="bi bi-printer me-1"></i> Print Report
+    </button>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-success">@Model.TotalRevenue.ToString("C")</div>
+                <div class="text-muted">Total Revenue</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-primary">@Model.ConsultationRevenue.ToString("C")</div>
+                <div class="text-muted">Consultation Revenue</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card info">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-info">@Model.MedicationRevenue.ToString("C")</div>
+                <div class="text-muted">Medication Revenue</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-warning">@Model.OutstandingAmount.ToString("C")</div>
+                <div class="text-muted">Outstanding</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Revenue Breakdown -->
+<div class="row g-4 mb-4">
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-pie-chart me-2"></i>Revenue Breakdown
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td><strong>Total Revenue</strong></td>
+                            <td class="text-end"><strong>@Model.TotalRevenue.ToString("C")</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Consultation Fees</td>
+                            <td class="text-end">@Model.ConsultationRevenue.ToString("C")</td>
+                        </tr>
+                        <tr>
+                            <td>Medication Sales</td>
+                            <td class="text-end">@Model.MedicationRevenue.ToString("C")</td>
+                        </tr>
+                        @if (Model.OtherRevenue > 0)
+                        {
+                            <tr>
+                                <td>Other Charges</td>
+                                <td class="text-end">@Model.OtherRevenue.ToString("C")</td>
+                            </tr>
+                        }
+                        @if (Model.TotalDiscounts > 0)
+                        {
+                            <tr class="text-success">
+                                <td>Discounts Applied</td>
+                                <td class="text-end">- @Model.TotalDiscounts.ToString("C")</td>
+                            </tr>
+                        }
+                        <tr class="border-top">
+                            <td><strong>Outstanding Amount</strong></td>
+                            <td class="text-end @(Model.OutstandingAmount > 0 ? "text-danger fw-bold" : "text-success")">
+                                @Model.OutstandingAmount.ToString("C")
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-receipt me-2"></i>Billing Status
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tbody>
+                        <tr>
+                            <td><strong>Total Billings</strong></td>
+                            <td class="text-end"><strong>@Model.TotalBillings</strong></td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="badge bg-success me-2">Paid</span>
+                            </td>
+                            <td class="text-end">@Model.PaidBillings</td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <span class="badge bg-warning me-2">Pending</span>
+                            </td>
+                            <td class="text-end">@Model.PendingBillings</td>
+                        </tr>
+                        <tr class="border-top">
+                            <td><strong>Collection Rate</strong></td>
+                            <td class="text-end">
+                                @{
+                                    var collectionRate = Model.TotalBillings > 0 
+                                        ? (Model.PaidBillings * 100.0m / Model.TotalBillings) 
+                                        : 0;
+                                }
+                                <span class="badge @(collectionRate >= 80 ? "bg-success" : collectionRate >= 50 ? "bg-warning" : "bg-danger")">
+                                    @collectionRate.ToString("F1")%
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Daily Breakdown -->
+<div class="card mb-4">
+    <div class="card-header">
+        <i class="bi bi-calendar3 me-2"></i>Daily Revenue Breakdown
+    </div>
+    <div class="card-body p-0">
+        @if (Model.DailyBreakdown.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Date</th>
+                            <th class="text-center">Billings</th>
+                            <th class="text-end">Total Amount</th>
+                            <th class="text-end">Collected</th>
+                            <th class="text-end">Outstanding</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var daily in Model.DailyBreakdown)
+                        {
+                            var dailyOutstanding = daily.TotalAmount - daily.AmountCollected;
+                            <tr>
+                                <td>@daily.Date.ToString("MMM dd, yyyy (ddd)")</td>
+                                <td class="text-center">
+                                    <span class="badge bg-secondary">@daily.BillingCount</span>
+                                </td>
+                                <td class="text-end">@daily.TotalAmount.ToString("C")</td>
+                                <td class="text-end text-success">@daily.AmountCollected.ToString("C")</td>
+                                <td class="text-end @(dailyOutstanding > 0 ? "text-danger" : "text-success")">
+                                    @dailyOutstanding.ToString("C")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th>Total</th>
+                            <th class="text-center">@Model.DailyBreakdown.Sum(d => d.BillingCount)</th>
+                            <th class="text-end">@Model.DailyBreakdown.Sum(d => d.TotalAmount).ToString("C")</th>
+                            <th class="text-end">@Model.DailyBreakdown.Sum(d => d.AmountCollected).ToString("C")</th>
+                            <th class="text-end">@Model.DailyBreakdown.Sum(d => d.TotalAmount - d.AmountCollected).ToString("C")</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                No billing records for this month
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Payment Method Breakdown -->
+<div class="card">
+    <div class="card-header">
+        <i class="bi bi-credit-card me-2"></i>Payment Method Breakdown
+    </div>
+    <div class="card-body p-0">
+        @if (Model.PaymentMethodBreakdown.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Payment Method</th>
+                            <th class="text-center">Transactions</th>
+                            <th class="text-end">Total Amount</th>
+                            <th class="text-end">Percentage</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var method in Model.PaymentMethodBreakdown.OrderByDescending(m => m.TotalAmount))
+                        {
+                            <tr>
+                                <td>
+                                    <i class="bi bi-@(method.PaymentMethod == PaymentMethod.Cash ? "cash-coin" : 
+                                                      method.PaymentMethod == PaymentMethod.CreditCard ? "credit-card" :
+                                                      method.PaymentMethod == PaymentMethod.DebitCard ? "credit-card-2-front" :
+                                                      method.PaymentMethod == PaymentMethod.Insurance ? "shield-check" :
+                                                      "bank") me-2"></i>
+                                    @method.PaymentMethod
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-info">@method.TransactionCount</span>
+                                </td>
+                                <td class="text-end">@method.TotalAmount.ToString("C")</td>
+                                <td class="text-end">
+                                    <div class="d-flex align-items-center justify-content-end">
+                                        <div class="progress me-2" style="width: 100px; height: 20px;">
+                                            <div class="progress-bar" role="progressbar" 
+                                                 style="width: @method.Percentage.ToString("F1")%" 
+                                                 aria-valuenow="@method.Percentage" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                            </div>
+                                        </div>
+                                        <span class="fw-medium">@method.Percentage.ToString("F1")%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                    <tfoot class="table-light">
+                        <tr>
+                            <th>Total</th>
+                            <th class="text-center">@Model.PaymentMethodBreakdown.Sum(m => m.TransactionCount)</th>
+                            <th class="text-end">@Model.PaymentMethodBreakdown.Sum(m => m.TotalAmount).ToString("C")</th>
+                            <th class="text-end">100%</th>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-credit-card fs-1 d-block mb-2"></i>
+                No payment records for this month
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    .stat-card.info {
+        border-left-color: #0dcaf0;
+    }
+    .stat-card.info .stat-icon {
+        background: rgba(13, 202, 240, 0.1);
+        color: #0dcaf0;
+    }
+    @@media print {
+        .sidebar, .top-header, .btn, form { display: none !important; }
+        .main-content { margin: 0 !important; }
+        .card { break-inside: avoid; }
+    }
+</style>

@@ -1,0 +1,360 @@
+@model ClinicMIS.Models.ViewModels.PrescriptionCreateViewModel
+@{
+    ViewData["Title"] = "Create Prescription";
+}
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-file-medical me-2"></i>New Prescription
+            </div>
+            <div class="card-body">
+                <form asp-action="Create" method="post" id="prescriptionForm">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                    <input type="hidden" asp-for="VisitId" />
+                    
+                    <!-- Patient Selection -->
+                    <h6 class="text-primary mb-3"><i class="bi bi-person me-2"></i>Patient Information</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label asp-for="PatientId" class="form-label"></label>
+                            @if (Model.PatientId > 0 && Model.AvailablePatients?.Any() == true)
+                            {
+                                @* Patient pre-selected *@
+                                <select asp-for="PatientId" class="form-select" disabled>
+                                    @foreach (var patient in Model.AvailablePatients)
+                                    {
+                                        <option value="@patient.PatientId" selected>
+                                            @patient.FullName (@patient.ClinicNumber) - @patient.PhoneNumber
+                                        </option>
+                                    }
+                                </select>
+                                <input type="hidden" asp-for="PatientId" />
+                            }
+                            else
+                            {
+                                <select asp-for="PatientId" class="form-select">
+                                    <option value="">Select Patient...</option>
+                                    @if (Model.AvailablePatients != null)
+                                    {
+                                        @foreach (var patient in Model.AvailablePatients)
+                                        {
+                                            <option value="@patient.PatientId">
+                                                @patient.FullName (@patient.ClinicNumber) - @patient.PhoneNumber
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                            }
+                            <span asp-validation-for="PatientId" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Doctor Selection -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label asp-for="DoctorId" class="form-label"></label>
+                            @if (Model.CurrentUserIsDoctor && Model.DoctorId.HasValue)
+                            {
+                                @* Current user is a doctor - auto-selected *@
+                                var currentDoc = Model.AvailableDoctors?.FirstOrDefault(d => d.StaffId == Model.DoctorId);
+                                <input type="hidden" asp-for="DoctorId" />
+                                <input type="text" class="form-control" readonly 
+                                       value="Dr. @currentDoc?.FirstName @currentDoc?.LastName (You)" />
+                                <small class="text-muted">Prescription will be created under your name</small>
+                            }
+                            else
+                            {
+                                @* Show doctor dropdown for non-doctor users *@
+                                <select asp-for="DoctorId" class="form-select">
+                                    <option value="">Select Prescribing Doctor...</option>
+                                    @if (Model.AvailableDoctors != null)
+                                    {
+                                        @foreach (var doctor in Model.AvailableDoctors)
+                                        {
+                                            <option value="@doctor.StaffId">
+                                                Dr. @doctor.FirstName @doctor.LastName
+                                                @if (!string.IsNullOrEmpty(doctor.Specialization))
+                                                {
+                                                    @:(@doctor.Specialization)
+                                                }
+                                            </option>
+                                        }
+                                    }
+                                </select>
+                                <span asp-validation-for="DoctorId" class="text-danger small"></span>
+                            }
+                        </div>
+                    </div>
+                    
+                    <!-- Diagnosis -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-clipboard2-pulse me-2"></i>Diagnosis</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label asp-for="Diagnosis" class="form-label"></label>
+                            <textarea asp-for="Diagnosis" class="form-control" rows="2" 
+                                      placeholder="Enter diagnosis..."></textarea>
+                            <span asp-validation-for="Diagnosis" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Medications -->
+                    <h6 class="text-primary mb-3 mt-4">
+                        <i class="bi bi-capsule me-2"></i>Medications
+                        <button type="button" class="btn btn-sm btn-outline-primary float-end" id="addMedication">
+                            <i class="bi bi-plus-lg me-1"></i>Add Medication
+                        </button>
+                    </h6>
+                    
+                    <div id="medicationsContainer">
+                        <!-- Medication items will be added here -->
+                    </div>
+                    
+                    <div id="noMedicationsAlert" class="alert alert-warning py-2">
+                        <i class="bi bi-exclamation-triangle me-2"></i>
+                        No medications added yet. Click "Add Medication" to prescribe drugs.
+                    </div>
+                    
+                    <!-- Special Instructions -->
+                    <h6 class="text-primary mb-3 mt-4"><i class="bi bi-info-circle me-2"></i>Special Instructions</h6>
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label asp-for="SpecialInstructions" class="form-label"></label>
+                            <textarea asp-for="SpecialInstructions" class="form-control" rows="2" 
+                                      placeholder="Any special instructions for the patient..."></textarea>
+                            <span asp-validation-for="SpecialInstructions" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    
+                    <hr class="my-4" />
+                    
+                    <div class="d-flex justify-content-between">
+                        @if (Model.PatientId > 0)
+                        {
+                            <a asp-controller="Patients" asp-action="Details" asp-route-id="@Model.PatientId" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Back to Patient
+                            </a>
+                        }
+                        else
+                        {
+                            <a asp-action="Index" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-1"></i> Cancel
+                            </a>
+                        }
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="bi bi-check-lg me-1"></i> Create Prescription
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Drug Reference Panel -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="bi bi-prescription2 me-2"></i>Available Drugs
+            </div>
+            <div class="card-body p-0">
+                <div class="p-3">
+                    <input type="text" class="form-control form-control-sm" id="drugSearch" 
+                           placeholder="Search drugs...">
+                </div>
+                <div class="list-group list-group-flush" id="drugList" style="max-height: 400px; overflow-y: auto;">
+                    @if (Model.AvailableDrugs != null)
+                    {
+                        @foreach (var drug in Model.AvailableDrugs)
+                        {
+                            <div class="list-group-item drug-item" 
+                                 data-drug-id="@drug.DrugId"
+                                 data-drug-name="@drug.Name"
+                                 data-drug-strength="@drug.Strength"
+                                 data-drug-form="@drug.DosageForm"
+                                 data-drug-price="@drug.UnitPrice"
+                                 data-drug-stock="@drug.QuantityInStock">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div>
+                                        <strong class="drug-name">@drug.Name</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            @drug.Strength - @drug.DosageForm
+                                        </small>
+                                    </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-success">@drug.UnitPrice.ToString("C")</span>
+                                        <br>
+                                        <small class="text-muted">Stock: @drug.QuantityInStock</small>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-sm btn-outline-primary mt-2 add-drug-btn w-100">
+                                    <i class="bi bi-plus me-1"></i>Add to Prescription
+                                </button>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Medication Item Template -->
+<template id="medicationTemplate">
+    <div class="card mb-3 medication-item">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-start mb-3">
+                <h6 class="mb-0">
+                    <i class="bi bi-capsule text-primary me-2"></i>
+                    <span class="drug-display-name"></span>
+                </h6>
+                <button type="button" class="btn btn-sm btn-outline-danger remove-medication">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+            <input type="hidden" class="drug-id-input" />
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Quantity <span class="text-danger">*</span></label>
+                    <input type="number" class="form-control quantity-input" min="1" max="1000" value="1" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Duration (Days)</label>
+                    <input type="number" class="form-control duration-input" min="1" max="365" placeholder="Optional" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Unit Price</label>
+                    <input type="text" class="form-control unit-price-display" readonly />
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-12">
+                    <label class="form-label">Dosage Instructions <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control dosage-input" placeholder="e.g., 1 tablet twice daily after meals" required />
+                </div>
+            </div>
+            <div class="row g-3 mt-1">
+                <div class="col-md-12">
+                    <label class="form-label">Notes</label>
+                    <input type="text" class="form-control notes-input" placeholder="Optional notes..." />
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    
+    <script>
+        let medicationIndex = 0;
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.getElementById('medicationsContainer');
+            const noMedsAlert = document.getElementById('noMedicationsAlert');
+            const template = document.getElementById('medicationTemplate');
+            const addBtn = document.getElementById('addMedication');
+            const drugSearch = document.getElementById('drugSearch');
+            
+            function updateNoMedsAlert() {
+                const items = container.querySelectorAll('.medication-item');
+                noMedsAlert.style.display = items.length === 0 ? 'block' : 'none';
+            }
+            
+            function addMedication(drugId, drugName, drugStrength, drugForm, drugPrice) {
+                const clone = template.content.cloneNode(true);
+                const item = clone.querySelector('.medication-item');
+                
+                // Set drug info
+                item.querySelector('.drug-display-name').textContent = `${drugName} (${drugStrength} - ${drugForm})`;
+                item.querySelector('.drug-id-input').name = `Items[${medicationIndex}].DrugId`;
+                item.querySelector('.drug-id-input').value = drugId;
+                item.querySelector('.quantity-input').name = `Items[${medicationIndex}].Quantity`;
+                item.querySelector('.dosage-input').name = `Items[${medicationIndex}].DosageInstructions`;
+                item.querySelector('.duration-input').name = `Items[${medicationIndex}].DurationDays`;
+                item.querySelector('.notes-input').name = `Items[${medicationIndex}].Notes`;
+                item.querySelector('.unit-price-display').value = parseFloat(drugPrice).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+                
+                // Remove button handler
+                item.querySelector('.remove-medication').addEventListener('click', function() {
+                    item.remove();
+                    updateNoMedsAlert();
+                    reindexItems();
+                });
+                
+                container.appendChild(clone);
+                medicationIndex++;
+                updateNoMedsAlert();
+            }
+            
+            function reindexItems() {
+                const items = container.querySelectorAll('.medication-item');
+                items.forEach((item, idx) => {
+                    item.querySelector('.drug-id-input').name = `Items[${idx}].DrugId`;
+                    item.querySelector('.quantity-input').name = `Items[${idx}].Quantity`;
+                    item.querySelector('.dosage-input').name = `Items[${idx}].DosageInstructions`;
+                    item.querySelector('.duration-input').name = `Items[${idx}].DurationDays`;
+                    item.querySelector('.notes-input').name = `Items[${idx}].Notes`;
+                });
+                medicationIndex = items.length;
+            }
+            
+            // Add drug from side panel
+            document.querySelectorAll('.add-drug-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const drugItem = this.closest('.drug-item');
+                    const drugId = drugItem.dataset.drugId;
+                    const drugName = drugItem.dataset.drugName;
+                    const drugStrength = drugItem.dataset.drugStrength;
+                    const drugForm = drugItem.dataset.drugForm;
+                    const drugPrice = drugItem.dataset.drugPrice;
+                    
+                    addMedication(drugId, drugName, drugStrength, drugForm, drugPrice);
+                });
+            });
+            
+            // Add medication button (opens first drug or scrolls to panel)
+            addBtn.addEventListener('click', function() {
+                const firstDrug = document.querySelector('.drug-item');
+                if (firstDrug) {
+                    firstDrug.querySelector('.add-drug-btn').click();
+                }
+            });
+            
+            // Drug search filter
+            drugSearch.addEventListener('input', function() {
+                const searchTerm = this.value.toLowerCase();
+                document.querySelectorAll('.drug-item').forEach(item => {
+                    const drugName = item.querySelector('.drug-name').textContent.toLowerCase();
+                    item.style.display = drugName.includes(searchTerm) ? '' : 'none';
+                });
+            });
+            
+            // Form validation
+            document.getElementById('prescriptionForm').addEventListener('submit', function(e) {
+                const items = container.querySelectorAll('.medication-item');
+                if (items.length === 0) {
+                    e.preventDefault();
+                    alert('Please add at least one medication to the prescription.');
+                    return false;
+                }
+            });
+            
+            updateNoMedsAlert();
+        });
+    </script>
+    
+    <style>
+        .drug-item {
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        .drug-item:hover {
+            background-color: #f8f9fa;
+        }
+        .medication-item {
+            border-left: 3px solid #0d6efd;
+        }
+    </style>
+}

@@ -1,0 +1,202 @@
+@model ClinicMIS.Models.ViewModels.DailyVisitsReportViewModel
+@{
+    ViewData["Title"] = $"Daily Visits Report - {Model.ReportDate:MMMM dd, yyyy}";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <form asp-action="DailyVisits" method="get" class="d-flex gap-2">
+            <input type="date" name="date" class="form-control" value="@Model.ReportDate.ToString("yyyy-MM-dd")" />
+            <button type="submit" class="btn btn-primary">View Report</button>
+        </form>
+    </div>
+    <button onclick="window.print()" class="btn btn-outline-secondary">
+        <i class="bi bi-printer me-1"></i> Print Report
+    </button>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-3 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card primary">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-primary">@Model.TotalVisits</div>
+                <div class="text-muted">Total Visits</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card success">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-success">@Model.CompletedVisits</div>
+                <div class="text-muted">Completed</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card warning">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-warning">@Model.CancelledVisits</div>
+                <div class="text-muted">Cancelled</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card danger">
+            <div class="card-body text-center">
+                <div class="display-5 fw-bold text-danger">@Model.NoShowVisits</div>
+                <div class="text-muted">No Shows</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- By Clinic -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-building me-2"></i>Visits by Clinic
+            </div>
+            <div class="card-body p-0">
+                @if (Model.VisitsByClinic.Any())
+                {
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Clinic</th>
+                                <th class="text-center">Visits</th>
+                                <th class="text-center">Completed</th>
+                                <th class="text-end">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var clinic in Model.VisitsByClinic)
+                            {
+                                <tr>
+                                    <td>@clinic.ClinicName</td>
+                                    <td class="text-center"><span class="badge bg-primary">@clinic.VisitCount</span></td>
+                                    <td class="text-center"><span class="badge bg-success">@clinic.CompletedCount</span></td>
+                                    <td class="text-end">@clinic.RevenueGenerated.ToString("C")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">No visits recorded</div>
+                }
+            </div>
+        </div>
+    </div>
+    
+    <!-- By Doctor -->
+    <div class="col-md-6">
+        <div class="card h-100">
+            <div class="card-header">
+                <i class="bi bi-person-badge me-2"></i>Visits by Doctor
+            </div>
+            <div class="card-body p-0">
+                @if (Model.VisitsByDoctor.Any())
+                {
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Doctor</th>
+                                <th>Clinic</th>
+                                <th class="text-center">Visits</th>
+                                <th class="text-center">Prescriptions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var doctor in Model.VisitsByDoctor)
+                            {
+                                <tr>
+                                    <td>@doctor.DoctorName</td>
+                                    <td><small class="text-muted">@doctor.ClinicName</small></td>
+                                    <td class="text-center"><span class="badge bg-primary">@doctor.VisitCount</span></td>
+                                    <td class="text-center"><span class="badge bg-info">@doctor.PrescriptionCount</span></td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="text-center py-4 text-muted">No doctor visits recorded</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Detailed Visit List -->
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-list-ul me-2"></i>Visit Details
+    </div>
+    <div class="card-body p-0">
+        @if (Model.VisitDetails.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Visit #</th>
+                            <th>Patient</th>
+                            <th>Clinic</th>
+                            <th>Doctor</th>
+                            <th>Check-In</th>
+                            <th>Check-Out</th>
+                            <th>Status</th>
+                            <th>Diagnosis</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var visit in Model.VisitDetails)
+                        {
+                            <tr>
+                                <td><code>@visit.VisitNumber</code></td>
+                                <td>@visit.PatientName</td>
+                                <td>@visit.ClinicName</td>
+                                <td>@visit.DoctorName</td>
+                                <td>@(visit.CheckInTime?.ToString(@"hh\:mm") ?? "-")</td>
+                                <td>@(visit.CheckOutTime?.ToString(@"hh\:mm") ?? "-")</td>
+                                <td>
+                                    @{
+                                        var statusClass = visit.Status switch
+                                        {
+                                            ClinicMIS.Models.Entities.VisitStatus.Completed => "bg-success",
+                                            ClinicMIS.Models.Entities.VisitStatus.Cancelled => "bg-danger",
+                                            ClinicMIS.Models.Entities.VisitStatus.NoShow => "bg-warning",
+                                            ClinicMIS.Models.Entities.VisitStatus.InProgress => "bg-info",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @statusClass">@visit.Status</span>
+                                </td>
+                                <td><small>@(visit.Diagnosis ?? "-")</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+        else
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-calendar-x fs-1 d-block mb-2"></i>
+                No visits recorded for this date
+            </div>
+        }
+    </div>
+</div>
+
+<style>
+    @@media print {
+        .sidebar, .top-header, .btn, form { display: none !important; }
+        .main-content { margin: 0 !important; }
+        .card { break-inside: avoid; }
+    }
+</style>

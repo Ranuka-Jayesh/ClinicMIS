@@ -1,0 +1,233 @@
+@model ClinicMIS.Models.ViewModels.StaffListViewModel
+@using ClinicMIS.Models.Entities
+@{
+    ViewData["Title"] = "Staff Management";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+        <span class="text-muted">@Model.TotalCount staff members</span>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-person-plus me-1"></i> Add Staff Member
+    </a>
+</div>
+
+<!-- Search and Filter -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label small text-muted">Search</label>
+                <div class="input-group input-group-sm">
+                    <span class="input-group-text"><i class="bi bi-search"></i></span>
+                    <input type="text" name="searchTerm" class="form-control" 
+                           placeholder="Name, email, employee #..." value="@Model.SearchTerm" />
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Role</label>
+                <select name="role" class="form-select form-select-sm">
+                    <option value="">All Roles</option>
+                    @foreach (StaffRole role in Enum.GetValues(typeof(StaffRole)))
+                    {
+                        <option value="@((int)role)" selected="@(Model.Role == role)">@role</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Clinic</label>
+                <select name="clinicId" class="form-select form-select-sm">
+                    <option value="">All Clinics</option>
+                    @if (Model.AvailableClinics != null)
+                    {
+                        @foreach (var clinic in Model.AvailableClinics)
+                        {
+                            <option value="@clinic.ClinicId" selected="@(Model.ClinicId == clinic.ClinicId)">@clinic.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted">Sort By</label>
+                <select name="sortBy" class="form-select form-select-sm">
+                    <option value="">Name</option>
+                    <option value="role" selected="@(Model.SortBy == "role")">Role</option>
+                    <option value="clinic" selected="@(Model.SortBy == "clinic")">Clinic</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small text-muted d-block">&nbsp;</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="activeOnly" value="true" 
+                           @(Model.ActiveOnly == true ? "checked" : "") id="activeOnly" />
+                    <label class="form-check-label small" for="activeOnly">Active Only</label>
+                </div>
+            </div>
+            <div class="col-md-1 d-flex align-items-end">
+                <button type="submit" class="btn btn-outline-primary btn-sm w-100">
+                    <i class="bi bi-funnel"></i>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Quick Filters -->
+<div class="mb-3">
+    <div class="btn-group btn-group-sm" role="group">
+        <a href="@Url.Action("Index", new { role = (int)StaffRole.Doctor })" 
+           class="btn @(Model.Role == StaffRole.Doctor ? "btn-primary" : "btn-outline-primary")">
+            <i class="bi bi-person-badge me-1"></i>Doctors
+        </a>
+        <a href="@Url.Action("Index", new { role = (int)StaffRole.Nurse })" 
+           class="btn @(Model.Role == StaffRole.Nurse ? "btn-info" : "btn-outline-info")">
+            <i class="bi bi-heart-pulse me-1"></i>Nurses
+        </a>
+        <a href="@Url.Action("Index", new { role = (int)StaffRole.Pharmacist })" 
+           class="btn @(Model.Role == StaffRole.Pharmacist ? "btn-success" : "btn-outline-success")">
+            <i class="bi bi-capsule me-1"></i>Pharmacists
+        </a>
+        <a href="@Url.Action("Index", new { role = (int)StaffRole.Receptionist })" 
+           class="btn @(Model.Role == StaffRole.Receptionist ? "btn-warning" : "btn-outline-warning")">
+            <i class="bi bi-telephone me-1"></i>Receptionists
+        </a>
+        <a href="@Url.Action("Index")" class="btn btn-outline-secondary">
+            Clear Filters
+        </a>
+    </div>
+</div>
+
+<!-- Staff Table -->
+<div class="card">
+    <div class="card-body p-0">
+        @if (Model.StaffMembers.Any())
+        {
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Employee #</th>
+                            <th>Name</th>
+                            <th>Role</th>
+                            <th>Specialization</th>
+                            <th>Clinic</th>
+                            <th>Contact</th>
+                            <th>Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var staff in Model.StaffMembers)
+                        {
+                            <tr class="@(!staff.IsActive ? "table-secondary" : "")">
+                                <td><code class="text-primary">@staff.EmployeeNumber</code></td>
+                                <td>
+                                    <a asp-action="Details" asp-route-id="@staff.StaffId" 
+                                       class="text-decoration-none fw-medium">
+                                        @staff.FullName
+                                    </a>
+                                    @if (staff.HasUserAccount)
+                                    {
+                                        <i class="bi bi-person-check text-success ms-1" title="Has Login Account"></i>
+                                    }
+                                </td>
+                                <td>
+                                    @{
+                                        var roleClass = staff.Role switch
+                                        {
+                                            StaffRole.Admin => "bg-danger",
+                                            StaffRole.Doctor => "bg-primary",
+                                            StaffRole.Nurse => "bg-info",
+                                            StaffRole.Pharmacist => "bg-success",
+                                            StaffRole.Receptionist => "bg-warning text-dark",
+                                            _ => "bg-secondary"
+                                        };
+                                    }
+                                    <span class="badge @roleClass">@staff.Role</span>
+                                </td>
+                                <td>@(staff.Specialization ?? "—")</td>
+                                <td>@(staff.ClinicName ?? "—")</td>
+                                <td>
+                                    <small>
+                                        <i class="bi bi-envelope me-1"></i>@staff.Email
+                                        <br>
+                                        <i class="bi bi-telephone me-1"></i>@staff.PhoneNumber
+                                    </small>
+                                </td>
+                                <td>
+                                    @if (staff.IsActive)
+                                    {
+                                        <span class="badge bg-success">Active</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    <div class="btn-group btn-group-sm">
+                                        <a asp-action="Details" asp-route-id="@staff.StaffId" 
+                                           class="btn btn-outline-primary" title="View Details">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a asp-action="Edit" asp-route-id="@staff.StaffId" 
+                                           class="btn btn-outline-secondary" title="Edit">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            @if (Model.TotalPages > 1)
+            {
+                <nav class="d-flex justify-content-between align-items-center p-3 border-top">
+                    <div class="text-muted small">
+                        Showing @((Model.CurrentPage - 1) * Model.PageSize + 1) to 
+                        @Math.Min(Model.CurrentPage * Model.PageSize, Model.TotalCount) of @Model.TotalCount
+                    </div>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item @(Model.CurrentPage == 1 ? "disabled" : "")">
+                            <a class="page-link" href="?currentPage=@(Model.CurrentPage - 1)&searchTerm=@Model.SearchTerm&role=@((int?)Model.Role)&clinicId=@Model.ClinicId&activeOnly=@Model.ActiveOnly&sortBy=@Model.SortBy">
+                                <i class="bi bi-chevron-left"></i>
+                            </a>
+                        </li>
+                        @for (int i = 1; i <= Model.TotalPages; i++)
+                        {
+                            <li class="page-item @(i == Model.CurrentPage ? "active" : "")">
+                                <a class="page-link" href="?currentPage=@i&searchTerm=@Model.SearchTerm&role=@((int?)Model.Role)&clinicId=@Model.ClinicId&activeOnly=@Model.ActiveOnly&sortBy=@Model.SortBy">@i</a>
+                            </li>
+                        }
+                        <li class="page-item @(Model.CurrentPage == Model.TotalPages ? "disabled" : "")">
+                            <a class="page-link" href="?currentPage=@(Model.CurrentPage + 1)&searchTerm=@Model.SearchTerm&role=@((int?)Model.Role)&clinicId=@Model.ClinicId&activeOnly=@Model.ActiveOnly&sortBy=@Model.SortBy">
+                                <i class="bi bi-chevron-right"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            }
+        }
+        else
+        {
+            <div class="text-center py-5">
+                <i class="bi bi-people fs-1 text-muted d-block mb-3"></i>
+                <h5 class="text-muted">No staff members found</h5>
+                @if (!string.IsNullOrEmpty(Model.SearchTerm) || Model.Role.HasValue || Model.ClinicId.HasValue)
+                {
+                    <p class="text-muted">Try adjusting your filter criteria</p>
+                    <a href="@Url.Action("Index")" class="btn btn-outline-primary">Clear Filters</a>
+                }
+                else
+                {
+                    <p class="text-muted">Get started by adding staff members</p>
+                    <a asp-action="Create" class="btn btn-primary">Add Staff Member</a>
+                }
+            </div>
+        }
+    </div>
+</div>

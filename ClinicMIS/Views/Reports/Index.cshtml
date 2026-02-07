@@ -1,0 +1,113 @@
+@{
+    ViewData["Title"] = "Reports";
+}
+
+<div class="row g-4">
+    <!-- Daily Visits Report -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center py-5">
+                <div class="rounded-circle bg-primary bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-calendar-day fs-1 text-primary"></i>
+                </div>
+                <h5>Daily Visits Report</h5>
+                <p class="text-muted">View all patient visits, consultations, and activities for a specific day.</p>
+                <form asp-action="DailyVisits" method="get" class="d-flex gap-2">
+                    <input type="date" name="date" class="form-control" value="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Monthly Revenue Report -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center py-5">
+                <div class="rounded-circle bg-success bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-currency-dollar fs-1 text-success"></i>
+                </div>
+                <h5>Monthly Revenue Report</h5>
+                <p class="text-muted">Comprehensive financial summary including billings, collections, and payment methods.</p>
+                <form asp-action="MonthlyRevenue" method="get" class="d-flex gap-2">
+                    <select name="month" class="form-select">
+                        @for (int i = 1; i <= 12; i++)
+                        {
+                            <option value="@i" selected="@(i == DateTime.Today.Month)">
+                                @System.Globalization.CultureInfo.CurrentCulture.DateTimeFormat.GetMonthName(i)
+                            </option>
+                        }
+                    </select>
+                    <select name="year" class="form-select">
+                        @for (int y = DateTime.Today.Year; y >= DateTime.Today.Year - 2; y--)
+                        {
+                            <option value="@y">@y</option>
+                        }
+                    </select>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-arrow-right"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Report -->
+    <div class="col-md-6 col-lg-4">
+        <div class="card h-100">
+            <div class="card-body text-center py-5">
+                <div class="rounded-circle bg-danger bg-opacity-10 d-inline-flex align-items-center justify-content-center mb-3" 
+                     style="width: 80px; height: 80px;">
+                    <i class="bi bi-exclamation-triangle fs-1 text-danger"></i>
+                </div>
+                <h5>Low Stock Report</h5>
+                <p class="text-muted">View drugs that are low in stock, out of stock, or expiring soon.</p>
+                <a asp-action="LowStock" class="btn btn-danger">
+                    View Report <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Report Information -->
+<div class="card mt-4">
+    <div class="card-header">
+        <i class="bi bi-info-circle me-2"></i>About Reports
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-4">
+                <h6><i class="bi bi-calendar-day text-primary me-2"></i>Daily Visits</h6>
+                <ul class="text-muted small">
+                    <li>Total visits by status</li>
+                    <li>Visits breakdown by clinic</li>
+                    <li>Visits by attending doctor</li>
+                    <li>Detailed visit list with outcomes</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="bi bi-currency-dollar text-success me-2"></i>Monthly Revenue</h6>
+                <ul class="text-muted small">
+                    <li>Total revenue and collections</li>
+                    <li>Consultation vs medication revenue</li>
+                    <li>Payment method breakdown</li>
+                    <li>Outstanding amounts</li>
+                </ul>
+            </div>
+            <div class="col-md-4">
+                <h6><i class="bi bi-exclamation-triangle text-danger me-2"></i>Low Stock</h6>
+                <ul class="text-muted small">
+                    <li>Drugs below reorder level</li>
+                    <li>Out of stock items</li>
+                    <li>Expiring drugs (30 days)</li>
+                    <li>Estimated reorder costs</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
